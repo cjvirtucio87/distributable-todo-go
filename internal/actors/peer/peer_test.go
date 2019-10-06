@@ -6,9 +6,9 @@ import (
 )
 
 func TestAddPeer(t *testing.T) {
-	leader := NewPeer()
+	leader := NewPeer("basic")
 
-	leader.AddPeer(NewPeer())
+	leader.AddPeer(NewPeer("basic"))
 
 	expected := 1
 	actual := leader.Count()
@@ -19,10 +19,10 @@ func TestAddPeer(t *testing.T) {
 }
 
 func TestSend(t *testing.T) {
-	leader := NewPeer()
+	leader := NewPeer("basic")
 
 	for i := 0; i < 3; i++ {
-		leader.AddPeer(NewPeer())
+		leader.AddPeer(NewPeer("basic"))
 	}
 
 	expected := true

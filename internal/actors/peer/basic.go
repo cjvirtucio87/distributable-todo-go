@@ -1,16 +1,5 @@
 package actors
 
-type Peer interface {
-	AddEntries(entries []Entry) bool
-	AddPeer(peer Peer)
-	Send(entries []Entry) bool
-	Count() int
-}
-
-type Entry struct {
-	command string
-}
-
 type basicPeer struct {
 	log   []Entry
 	peers []Peer
@@ -38,13 +27,4 @@ func (p *basicPeer) Send(entries []Entry) bool {
 	}
 
 	return len(success) == (len(entries) * len(p.peers))
-}
-
-func NewPeer() Peer {
-	p := &basicPeer{
-		log:   []Entry{},
-		peers: []Peer{},
-	}
-
-	return p
 }
