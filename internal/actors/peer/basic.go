@@ -9,11 +9,11 @@ type basicPeer struct {
 }
 
 func (p *basicPeer) AddEntries(e entryInfo) bool {
-	if e.nextIndex != len(p.log) {
+	if e.nextIndex > len(p.log)+1 {
 		return false
 	}
 
-	p.log = append(p.log, e.entries...)
+	p.log = append(p.log[:e.nextIndex], e.entries...)
 
 	return true
 }
@@ -24,7 +24,19 @@ func (p *basicPeer) AddPeer(otherPeer Peer) {
 	p.nextIndexMap[otherPeer.Id()] = len(p.log)
 }
 
-func (p *basicPeer) Count() int {
+func (p *basicPeer) Entry(idx int) Entry {
+	return p.log[idx]
+}
+
+func (p *basicPeer) Followers() []Peer {
+	return p.peers[:]
+}
+
+func (p *basicPeer) LogCount() int {
+	return len(p.log)
+}
+
+func (p *basicPeer) PeerCount() int {
 	return len(p.peers)
 }
 

@@ -3,7 +3,10 @@ package actors
 type Peer interface {
 	AddEntries(e entryInfo) bool
 	AddPeer(peer Peer)
-	Count() int
+	Entry(idx int) Entry
+	Followers() []Peer
+	PeerCount() int
+	LogCount() int
 	Id() int
 	Send(m Message) bool
 }

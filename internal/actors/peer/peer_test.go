@@ -10,11 +10,11 @@ func TestAddPeer(t *testing.T) {
 
 	leader.AddPeer(NewPeer("basic", 1))
 
-	expected := 1
-	actual := leader.Count()
+	expectedCount := 1
+	actualCount := leader.PeerCount()
 
-	if expected != actual {
-		t.Error(fmt.Printf("expected %d, was %d", expected, actual))
+	if expectedCount != actualCount {
+		t.Error(fmt.Printf("expectedCount %d, was %d", expectedCount, actualCount))
 	}
 }
 
@@ -25,8 +25,8 @@ func TestSend(t *testing.T) {
 		leader.AddPeer(NewPeer("basic", i))
 	}
 
-	expected := true
-	actual := leader.Send(
+	expectedSendResult := true
+	actualSendResult := leader.Send(
 		Message{
 			entries: []Entry{
 				Entry{command: "doFoo"},
@@ -34,7 +34,53 @@ func TestSend(t *testing.T) {
 		},
 	)
 
-	if expected != actual {
-		t.Error(fmt.Printf("expected %t, was %t", expected, actual))
+	if expectedSendResult != actualSendResult {
+		t.Error(fmt.Printf("expectedSendResult %t, was %t", expectedSendResult, actualSendResult))
+	}
+
+	leader = NewPeer("basic", 0)
+	for i := 1; i < 3; i++ {
+		leader.AddPeer(
+			&basicPeer{
+				id: i,
+				log: []Entry{
+					Entry{
+						command: "not supposed to be here",
+					},
+				},
+				nextIndexMap: map[int]int{},
+				peers:        []Peer{},
+				timeout:      10,
+			},
+		)
+	}
+
+	expectedEntry := Entry{command: "doFoo"}
+	actualSendResult = leader.Send(
+		Message{
+			entries: []Entry{
+				expectedEntry,
+			},
+		},
+	)
+
+	if expectedSendResult != actualSendResult {
+		t.Error(fmt.Printf("expectedSendResult %t, was %t", expectedSendResult, actualSendResult))
+	}
+
+	expectedPeerLogCount := 1
+
+	for _, p := range leader.Followers() {
+		actualPeerLogCount := p.LogCount()
+
+		if expectedPeerLogCount != actualPeerLogCount {
+			t.Error(fmt.Printf("expectedPeerLogCount %d, was %d", expectedPeerLogCount, actualPeerLogCount))
+		}
+
+		actualPeerEntry := p.Entry(0)
+
+		if expectedEntry != actualPeerEntry {
+			t.Error(fmt.Printf("expectedEntry %v, was %v", expectedEntry.command, actualPeerEntry.command))
+		}
 	}
 }
