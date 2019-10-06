@@ -1,24 +1,36 @@
 package actors
 
 type Peer interface {
-	AddEntries(entries []Entry) bool
+	AddEntries(e entryInfo) bool
 	AddPeer(peer Peer)
-	Send(entries []Entry) bool
 	Count() int
+	Id() int
+	Send(m Message) bool
+}
+
+type entryInfo struct {
+	entries   []Entry
+	nextIndex int
 }
 
 type Entry struct {
 	command string
 }
 
-func NewPeer(kind string) Peer {
+type Message struct {
+	entries []Entry
+}
+
+func NewPeer(kind string, id int) Peer {
 	var p Peer
 
 	switch kind {
 	default:
 		p = &basicPeer{
-			log:   []Entry{},
-			peers: []Peer{},
+			id:           id,
+			log:          []Entry{},
+			nextIndexMap: map[int]int{},
+			peers:        []Peer{},
 		}
 		break
 	}
