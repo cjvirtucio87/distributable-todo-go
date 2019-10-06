@@ -1,14 +1,20 @@
 package actors
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestAddPeer(t *testing.T) {
 	leader := NewPeer()
 
 	leader.AddPeer(NewPeer())
 
-	if leader.Count() != 1 {
-		t.Fail()
+	expected := 1
+	actual := leader.Count()
+
+	if expected != actual {
+		t.Error(fmt.Printf("expected %d, was %d", expected, actual))
 	}
 }
 
@@ -19,7 +25,10 @@ func TestSend(t *testing.T) {
 		leader.AddPeer(NewPeer())
 	}
 
-	if !leader.Send([]Entry{Entry{command: "doFoo"}}) {
-		t.Fail()
+	expected := true
+	actual := leader.Send([]Entry{Entry{command: "doFoo"}})
+
+	if expected != actual {
+		t.Error(fmt.Printf("expected %t, was %t", expected, actual))
 	}
 }
