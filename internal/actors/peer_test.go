@@ -7,7 +7,19 @@ func TestAddPeer(t *testing.T) {
 
 	leader.AddPeer(NewPeer())
 
-	if len(leader.Peers) != 1 {
+	if leader.Count() != 1 {
+		t.Fail()
+	}
+}
+
+func TestSend(t *testing.T) {
+	leader := NewPeer()
+
+	for i := 0; i < 3; i++ {
+		leader.AddPeer(NewPeer())
+	}
+
+	if !leader.Send([]Entry{Entry{command: "doFoo"}}) {
 		t.Fail()
 	}
 }
