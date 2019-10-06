@@ -31,6 +31,7 @@ func NewPeer(kind string, id int) Peer {
 			log:          []Entry{},
 			nextIndexMap: map[int]int{},
 			peers:        []Peer{},
+			timeout:      10,
 		}
 		break
 	}
