@@ -53,7 +53,6 @@ func TestSend(t *testing.T) {
 				},
 				nextIndexMap: map[int]int{},
 				peers:        []Peer{},
-				timeout:      10,
 			},
 		)
 	}

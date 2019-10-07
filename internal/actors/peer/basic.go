@@ -5,7 +5,6 @@ type basicPeer struct {
 	log          []Entry
 	nextIndexMap map[int]int
 	peers        []Peer
-	timeout      int
 }
 
 func (p *basicPeer) AddEntries(e entryInfo) bool {
@@ -61,9 +60,7 @@ func (p *basicPeer) Send(m Message) bool {
 		)
 
 		if !successfulAppend {
-			for i := 0; i < p.timeout; i++ {
-				nextIndex = p.nextIndexMap[otherPeerId]
-
+			for nextIndex := p.nextIndexMap[otherPeerId]; nextIndex >= 0; nextIndex-- {
 				successfulAppend = otherPeer.AddEntries(
 					entryInfo{
 						entries:   p.log[nextIndex:],
@@ -75,6 +72,8 @@ func (p *basicPeer) Send(m Message) bool {
 					successfulAppendCount++
 					break
 				}
+
+				p.nextIndexMap[otherPeerId] = nextIndex - 1
 			}
 		} else {
 			successfulAppendCount++
