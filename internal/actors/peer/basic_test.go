@@ -47,6 +47,9 @@ func TestSend(t *testing.T) {
 					Entry{
 						command: "not supposed to be here",
 					},
+					Entry{
+						command: "not supposed to be here either",
+					},
 				},
 				nextIndexMap: map[int]int{},
 				peers:        []Peer{},
