@@ -28,8 +28,8 @@ func TestSend(t *testing.T) {
 	expectedSendResult := true
 	actualSendResult := leader.Send(
 		Message{
-			entries: []Entry{
-				Entry{command: "doFoo"},
+			Entries: []Entry{
+				Entry{Command: "doFoo"},
 			},
 		},
 	)
@@ -45,22 +45,22 @@ func TestSend(t *testing.T) {
 				id: i,
 				log: []Entry{
 					Entry{
-						command: "not supposed to be here",
+						Command: "not supposed to be here",
 					},
 					Entry{
-						command: "not supposed to be here either",
+						Command: "not supposed to be here either",
 					},
 				},
-				nextIndexMap: map[int]int{},
+				NextIndexMap: map[int]int{},
 				peers:        []Peer{},
 			},
 		)
 	}
 
-	expectedEntry := Entry{command: "doFoo"}
+	expectedEntry := Entry{Command: "doFoo"}
 	actualSendResult = leader.Send(
 		Message{
-			entries: []Entry{
+			Entries: []Entry{
 				expectedEntry,
 			},
 		},
@@ -82,7 +82,7 @@ func TestSend(t *testing.T) {
 		actualPeerEntry := p.Entry(0)
 
 		if expectedEntry != actualPeerEntry {
-			t.Error(fmt.Printf("expectedEntry %v, was %v", expectedEntry.command, actualPeerEntry.command))
+			t.Error(fmt.Printf("expectedEntry %v, was %v", expectedEntry.Command, actualPeerEntry.Command))
 		}
 	}
 }
