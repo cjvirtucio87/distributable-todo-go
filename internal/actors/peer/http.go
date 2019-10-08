@@ -37,6 +37,43 @@ func (p *httpPeer) AddEntries(e EntryInfo) bool {
 	return res.StatusCode == http.StatusOK
 }
 
+func (p *httpPeer) Entry(id int) Entry {
+	e := map[string]int{
+		"EntryId": id,
+	}
+
+	jsonStr, err := json.Marshal(e)
+
+	log.Printf("json: %s\n", jsonStr)
+
+	res, err := http.Post(
+		fmt.Sprintf(
+			"%s/log/entry",
+			p.Url(),
+		),
+		"application/json",
+		bytes.NewBuffer(jsonStr),
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer res.Body.Close()
+
+	var result Entry
+
+	decoder := json.NewDecoder(res.Body)
+
+	err = decoder.Decode(&result)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return result
+}
+
 func (p *httpPeer) Init() error {
 	sm := http.NewServeMux()
 
@@ -59,6 +96,51 @@ func (p *httpPeer) Init() error {
 				"%d",
 				p.basicPeer.LogCount(),
 			)
+		},
+	)
+
+	sm.HandleFunc(
+		"/log/entry",
+		func(rw http.ResponseWriter, req *http.Request) {
+			defer req.Body.Close()
+
+			decoder := json.NewDecoder(req.Body)
+
+			var e map[string]int
+
+			err := decoder.Decode(&e)
+
+			if err != nil {
+				rw.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+
+				rw.WriteHeader(http.StatusBadRequest)
+
+				errPayload := map[string]string{
+					"error": err.Error(),
+				}
+
+				json.NewEncoder(rw).Encode(errPayload)
+			}
+
+			entryId := e["EntryId"]
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			entry := p.basicPeer.Entry(entryId)
+
+			rw.Header().Set(
+				"Content-Type",
+				"application/json",
+			)
+
+			rw.WriteHeader(http.StatusOK)
+
+			json.NewEncoder(rw).Encode(entry)
 		},
 	)
 
