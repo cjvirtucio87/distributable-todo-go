@@ -17,14 +17,26 @@ func TestPeerCount(t *testing.T) {
 		0,
 	)
 
-	follower := NewHttpPeer(
-		scheme,
-		host,
-		"8081",
-		1,
-	)
+	followers := []Peer{}
 
-	leader.AddPeer(follower)
+	for i := 1; i < 3; i++ {
+		followers = append(
+			followers,
+			NewHttpPeer(
+				scheme,
+				host,
+				fmt.Sprintf(
+					"808%d",
+					i,
+				),
+				i,
+			),
+		)
+	}
+
+	for _, follower := range followers {
+		leader.AddPeer(follower)
+	}
 
 	err := leader.Init()
 
@@ -32,7 +44,7 @@ func TestPeerCount(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectedCount := 1
+	expectedCount := len(followers)
 	actualCount := leader.PeerCount()
 
 	if expectedCount != actualCount {
