@@ -39,7 +39,15 @@ func (p *httpPeer) Init() error {
 		Handler: sm,
 	}
 
-	go p.server.ListenAndServe()
+	// inspired by:
+	// https://github.com/openshift/origin/blob/67ef8497bbcd4f7ea8bc4e0e2daa75ba0c613f20/examples/hello-openshift/hello_openshift.go
+	go func() {
+		err := p.server.ListenAndServe()
+
+		if err != nil {
+			panic("ListenAndServe: " + err.Error())
+		}
+	}()
 
 	return nil
 }
