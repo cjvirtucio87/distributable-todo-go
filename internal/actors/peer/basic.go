@@ -3,16 +3,16 @@ package actors
 type basicPeer struct {
 	id           int
 	log          []Entry
-	nextIndexMap map[int]int
+	NextIndexMap map[int]int
 	peers        []Peer
 }
 
-func (p *basicPeer) AddEntries(e entryInfo) bool {
-	if e.nextIndex > len(p.log)+1 {
+func (p *basicPeer) AddEntries(e EntryInfo) bool {
+	if e.NextIndex > len(p.log)+1 {
 		return false
 	}
 
-	p.log = append(p.log[:e.nextIndex], e.entries...)
+	p.log = append(p.log[:e.NextIndex], e.Entries...)
 
 	return true
 }
@@ -20,7 +20,7 @@ func (p *basicPeer) AddEntries(e entryInfo) bool {
 func (p *basicPeer) AddPeer(otherPeer Peer) {
 	p.peers = append(p.peers, otherPeer)
 
-	p.nextIndexMap[otherPeer.Id()] = len(p.log)
+	p.NextIndexMap[otherPeer.Id()] = len(p.log)
 }
 
 func (p *basicPeer) Entry(idx int) Entry {
@@ -48,27 +48,27 @@ func (p *basicPeer) Id() int {
 }
 
 func (p *basicPeer) Send(m Message) bool {
-	p.log = append(p.log, m.entries...)
+	p.log = append(p.log, m.Entries...)
 
 	var successfulAppendCount int
 
 	for _, otherPeer := range p.peers {
 		otherPeerId := otherPeer.Id()
-		nextIndex := p.nextIndexMap[otherPeerId]
+		nextIndex := p.NextIndexMap[otherPeerId]
 
 		successfulAppend := otherPeer.AddEntries(
-			entryInfo{
-				entries:   p.log[nextIndex:],
-				nextIndex: nextIndex,
+			EntryInfo{
+				Entries:   p.log[nextIndex:],
+				NextIndex: nextIndex,
 			},
 		)
 
 		if !successfulAppend {
-			for nextIndex := p.nextIndexMap[otherPeerId]; nextIndex >= 0; nextIndex-- {
+			for nextIndex := p.NextIndexMap[otherPeerId]; nextIndex >= 0; nextIndex-- {
 				successfulAppend = otherPeer.AddEntries(
-					entryInfo{
-						entries:   p.log[nextIndex:],
-						nextIndex: nextIndex,
+					EntryInfo{
+						Entries:   p.log[nextIndex:],
+						NextIndex: nextIndex,
 					},
 				)
 
@@ -77,7 +77,7 @@ func (p *basicPeer) Send(m Message) bool {
 					break
 				}
 
-				p.nextIndexMap[otherPeerId] = nextIndex - 1
+				p.NextIndexMap[otherPeerId] = nextIndex - 1
 			}
 		} else {
 			successfulAppendCount++
@@ -90,7 +90,7 @@ func (p *basicPeer) Send(m Message) bool {
 
 	for _, otherPeer := range p.peers {
 		otherPeerId := otherPeer.Id()
-		p.nextIndexMap[otherPeerId] += len(m.entries)
+		p.NextIndexMap[otherPeerId] += len(m.Entries)
 	}
 
 	return true

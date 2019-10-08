@@ -1,7 +1,7 @@
 package actors
 
 type Peer interface {
-	AddEntries(e entryInfo) bool
+	AddEntries(e EntryInfo) bool
 	AddPeer(peer Peer)
 	Entry(idx int) Entry
 	Followers() []Peer
@@ -12,24 +12,24 @@ type Peer interface {
 	Send(m Message) bool
 }
 
-type entryInfo struct {
-	entries   []Entry
-	nextIndex int
+type EntryInfo struct {
+	Entries   []Entry
+	NextIndex int
 }
 
 type Entry struct {
-	command string
+	Command string
 }
 
 type Message struct {
-	entries []Entry
+	Entries []Entry
 }
 
 func NewBasicPeer(id int) Peer {
 	return &basicPeer{
 		id:           id,
 		log:          []Entry{},
-		nextIndexMap: map[int]int{},
+		NextIndexMap: map[int]int{},
 		peers:        []Peer{},
 	}
 }
@@ -39,7 +39,7 @@ func NewHttpPeer(scheme, host string, port, id int) Peer {
 		basicPeer: basicPeer{
 			id:           id,
 			log:          []Entry{},
-			nextIndexMap: map[int]int{},
+			NextIndexMap: map[int]int{},
 			peers:        []Peer{},
 		},
 		scheme: scheme,

@@ -1,6 +1,8 @@
 package actors
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -14,6 +16,25 @@ type httpPeer struct {
 	host   string
 	port   int
 	scheme string
+}
+
+func (p *httpPeer) AddEntries(e EntryInfo) bool {
+	jsonStr, err := json.Marshal(e)
+
+	res, err := http.Post(
+		fmt.Sprintf(
+			"%s/log/addEntries",
+			p.Url(),
+		),
+		"application/json",
+		bytes.NewBuffer(jsonStr),
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return res.StatusCode == http.StatusOK
 }
 
 func (p *httpPeer) Init() error {
@@ -38,6 +59,100 @@ func (p *httpPeer) Init() error {
 				"%d",
 				p.basicPeer.LogCount(),
 			)
+		},
+	)
+
+	sm.HandleFunc(
+		"/log/addEntries",
+		func(rw http.ResponseWriter, req *http.Request) {
+			defer req.Body.Close()
+
+			decoder := json.NewDecoder(req.Body)
+
+			var e EntryInfo
+
+			err := decoder.Decode(&e)
+
+			if err != nil {
+				rw.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+
+				rw.WriteHeader(http.StatusBadRequest)
+
+				errPayload := map[string]string{
+					"error": err.Error(),
+				}
+
+				json.NewEncoder(rw).Encode(errPayload)
+			}
+
+			result := p.basicPeer.AddEntries(e)
+
+			if result {
+				rw.WriteHeader(http.StatusOK)
+			} else {
+				rw.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+
+				rw.WriteHeader(http.StatusBadRequest)
+
+				errPayload := map[string]string{
+					"error": "failed to send message",
+				}
+
+				json.NewEncoder(rw).Encode(errPayload)
+			}
+		},
+	)
+
+	sm.HandleFunc(
+		"/log/send",
+		func(rw http.ResponseWriter, req *http.Request) {
+			defer req.Body.Close()
+
+			decoder := json.NewDecoder(req.Body)
+
+			var m Message
+
+			err := decoder.Decode(&m)
+
+			if err != nil {
+				rw.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+
+				rw.WriteHeader(http.StatusBadRequest)
+
+				errPayload := map[string]string{
+					"error": err.Error(),
+				}
+
+				json.NewEncoder(rw).Encode(errPayload)
+			}
+
+			result := p.basicPeer.Send(m)
+
+			if result {
+				rw.WriteHeader(http.StatusOK)
+			} else {
+				rw.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+
+				rw.WriteHeader(http.StatusBadRequest)
+
+				errPayload := map[string]string{
+					"error": "failed to send message",
+				}
+
+				json.NewEncoder(rw).Encode(errPayload)
+			}
 		},
 	)
 
@@ -119,6 +234,25 @@ func (p *httpPeer) PeerCount() int {
 	}
 
 	return result
+}
+
+func (p *httpPeer) Send(m Message) bool {
+	jsonStr, err := json.Marshal(m)
+
+	res, err := http.Post(
+		fmt.Sprintf(
+			"%s/log/send",
+			p.Url(),
+		),
+		"application/json",
+		bytes.NewBuffer(jsonStr),
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return res.StatusCode == http.StatusOK
 }
 
 func (p *httpPeer) Url() string {
