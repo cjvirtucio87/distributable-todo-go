@@ -31,6 +31,10 @@ func (p *basicPeer) Followers() []Peer {
 	return p.peers[:]
 }
 
+func (p *basicPeer) Init() error {
+	return nil
+}
+
 func (p *basicPeer) LogCount() int {
 	return len(p.log)
 }

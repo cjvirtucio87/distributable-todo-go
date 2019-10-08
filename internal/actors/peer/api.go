@@ -5,6 +5,7 @@ type Peer interface {
 	AddPeer(peer Peer)
 	Entry(idx int) Entry
 	Followers() []Peer
+	Init() error
 	PeerCount() int
 	LogCount() int
 	Id() int
@@ -24,18 +25,26 @@ type Message struct {
 	entries []Entry
 }
 
-func NewPeer(kind string, id int) Peer {
-	var p Peer
+func NewBasicPeer(id int) Peer {
+	return &basicPeer{
+		id:           id,
+		log:          []Entry{},
+		nextIndexMap: map[int]int{},
+		peers:        []Peer{},
+	}
+}
 
-	switch kind {
-	default:
-		p = &basicPeer{
+func NewHttpPeer(scheme, host, port string, id int) Peer {
+	p := &httpPeer{
+		basicPeer: basicPeer{
 			id:           id,
 			log:          []Entry{},
 			nextIndexMap: map[int]int{},
 			peers:        []Peer{},
-		}
-		break
+		},
+		scheme: scheme,
+		host:   host,
+		port:   port,
 	}
 
 	return p
