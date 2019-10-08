@@ -30,6 +30,17 @@ func (p *httpPeer) Init() error {
 		},
 	)
 
+	sm.HandleFunc(
+		"/log/count",
+		func(rw http.ResponseWriter, req *http.Request) {
+			fmt.Fprintf(
+				rw,
+				"%d",
+				p.basicPeer.LogCount(),
+			)
+		},
+	)
+
 	p.server = &http.Server{
 		Addr: fmt.Sprintf(
 			"%s:%d",
@@ -50,6 +61,35 @@ func (p *httpPeer) Init() error {
 	}()
 
 	return nil
+}
+
+func (p *httpPeer) LogCount() int {
+	res, err := http.Get(
+		fmt.Sprintf(
+			"%s/log/count",
+			p.Url(),
+		),
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	result, err := strconv.Atoi(string(body))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return result
 }
 
 func (p *httpPeer) PeerCount() int {
