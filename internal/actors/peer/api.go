@@ -34,7 +34,7 @@ func NewBasicPeer(id int) Peer {
 	}
 }
 
-func NewHttpPeer(scheme, host, port string, id int) Peer {
+func NewHttpPeer(scheme, host string, port, id int) Peer {
 	p := &httpPeer{
 		basicPeer: basicPeer{
 			id:           id,

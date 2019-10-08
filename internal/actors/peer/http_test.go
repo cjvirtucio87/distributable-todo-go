@@ -8,7 +8,7 @@ import (
 func TestPeerCount(t *testing.T) {
 	scheme := "http"
 	host := "127.0.0.1"
-	leaderPort := "8080"
+	leaderPort := 8080
 
 	leader := NewHttpPeer(
 		scheme,
@@ -25,10 +25,7 @@ func TestPeerCount(t *testing.T) {
 			NewHttpPeer(
 				scheme,
 				host,
-				fmt.Sprintf(
-					"808%d",
-					i,
-				),
+				leaderPort+i,
 				i,
 			),
 		)

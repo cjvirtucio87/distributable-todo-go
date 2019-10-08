@@ -12,7 +12,7 @@ type httpPeer struct {
 	basicPeer
 	server *http.Server
 	host   string
-	port   string
+	port   int
 	scheme string
 }
 
@@ -32,7 +32,7 @@ func (p *httpPeer) Init() error {
 
 	p.server = &http.Server{
 		Addr: fmt.Sprintf(
-			"%s:%s",
+			"%s:%d",
 			p.host,
 			p.port,
 		),
@@ -83,7 +83,7 @@ func (p *httpPeer) PeerCount() int {
 
 func (p *httpPeer) Url() string {
 	return fmt.Sprintf(
-		"%s://%s:%s",
+		"%s://%s:%d",
 		p.scheme,
 		p.host,
 		p.port,
