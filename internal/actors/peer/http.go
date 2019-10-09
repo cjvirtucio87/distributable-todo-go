@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -43,7 +44,26 @@ func (p *httpPeer) AddEntries(e EntryInfo) bool {
 	return res.StatusCode == http.StatusOK
 }
 
-func (p *httpPeer) Entry(id int) Entry {
+func (p *httpPeer) respondWithFailure(rw http.ResponseWriter, msg string, status int) {
+	rw.Header().Set(
+		HeaderContentType,
+		ContentApplicationJson,
+	)
+
+	rw.WriteHeader(status)
+
+	errPayload := map[string]string{
+		"error": msg,
+	}
+
+	err := json.NewEncoder(rw).Encode(errPayload)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (p *httpPeer) Entry(id int) (Entry, bool) {
 	e := map[string]int{
 		entryIdKey: id,
 	}
@@ -70,14 +90,23 @@ func (p *httpPeer) Entry(id int) Entry {
 	defer res.Body.Close()
 
 	var result Entry
+	ok := true
 
 	err = json.NewDecoder(res.Body).Decode(&result)
 
 	if err != nil {
 		log.Fatal(err)
+		ok = false
 	}
 
-	return result
+	if &result == nil {
+		log.Fatal(
+			fmt.Sprintf("unable to retrieve entry for id %d", id),
+		)
+		ok = false
+	}
+
+	return result, ok
 }
 
 func (p *httpPeer) Init() error {
@@ -115,27 +144,31 @@ func (p *httpPeer) Init() error {
 			err := json.NewDecoder(req.Body).Decode(&entryMap)
 
 			if err != nil {
-				rw.Header().Set(
-					HeaderContentType,
-					ContentApplicationJson,
+				p.respondWithFailure(
+					rw,
+					err.Error(),
+					http.StatusBadRequest,
 				)
-
-				rw.WriteHeader(http.StatusBadRequest)
-
-				errPayload := map[string]string{
-					"error": err.Error(),
-				}
-
-				err = json.NewEncoder(rw).Encode(errPayload)
-
-				if err != nil {
-					log.Fatal(err)
-				}
 			}
 
 			entryId := entryMap[entryIdKey]
 
-			entry := p.basicPeer.Entry(entryId)
+			entry, ok := p.basicPeer.Entry(entryId)
+
+			if !ok {
+				msg := fmt.Sprintf(
+					"unable to retrieve entry with id %d\n",
+					entryId,
+				)
+
+				p.respondWithFailure(
+					rw,
+					msg,
+					http.StatusBadRequest,
+				)
+
+				log.Fatal(msg)
+			}
 
 			rw.Header().Set(
 				HeaderContentType,
@@ -147,6 +180,12 @@ func (p *httpPeer) Init() error {
 			err = json.NewEncoder(rw).Encode(entry)
 
 			if err != nil {
+				p.respondWithFailure(
+					rw,
+					err.Error(),
+					http.StatusInternalServerError,
+				)
+
 				log.Fatal(err)
 			}
 		},
@@ -164,22 +203,11 @@ func (p *httpPeer) Init() error {
 			err := decoder.Decode(&e)
 
 			if err != nil {
-				rw.Header().Set(
-					HeaderContentType,
-					ContentApplicationJson,
+				p.respondWithFailure(
+					rw,
+					err.Error(),
+					http.StatusBadRequest,
 				)
-
-				rw.WriteHeader(http.StatusBadRequest)
-
-				errPayload := map[string]string{
-					"error": err.Error(),
-				}
-
-				err = json.NewEncoder(rw).Encode(errPayload)
-
-				if err != nil {
-					log.Fatal(err)
-				}
 			}
 
 			result := p.basicPeer.AddEntries(e)
@@ -187,18 +215,26 @@ func (p *httpPeer) Init() error {
 			if result {
 				rw.WriteHeader(http.StatusOK)
 			} else {
-				rw.Header().Set(
-					HeaderContentType,
-					ContentApplicationJson,
-				)
+				entryStrings := []string{}
 
-				rw.WriteHeader(http.StatusBadRequest)
-
-				errPayload := map[string]string{
-					"error": "failed to send message",
+				for _, entry := range e.Entries {
+					entryStrings = append(
+						entryStrings,
+						fmt.Sprintf(
+							"%s",
+							entry.Command,
+						),
+					)
 				}
 
-				json.NewEncoder(rw).Encode(errPayload)
+				p.respondWithFailure(
+					rw,
+					fmt.Sprintf(
+						"failed to add entries: %s\n",
+						strings.Join(entryStrings, ", "),
+					),
+					http.StatusBadRequest,
+				)
 			}
 		},
 	)
@@ -215,18 +251,11 @@ func (p *httpPeer) Init() error {
 			err := decoder.Decode(&m)
 
 			if err != nil {
-				rw.Header().Set(
-					HeaderContentType,
-					ContentApplicationJson,
+				p.respondWithFailure(
+					rw,
+					err.Error(),
+					http.StatusBadRequest,
 				)
-
-				rw.WriteHeader(http.StatusBadRequest)
-
-				errPayload := map[string]string{
-					"error": err.Error(),
-				}
-
-				json.NewEncoder(rw).Encode(errPayload)
 			}
 
 			result := p.basicPeer.Send(m)
@@ -234,18 +263,26 @@ func (p *httpPeer) Init() error {
 			if result {
 				rw.WriteHeader(http.StatusOK)
 			} else {
-				rw.Header().Set(
-					HeaderContentType,
-					ContentApplicationJson,
-				)
+				entryStrings := []string{}
 
-				rw.WriteHeader(http.StatusBadRequest)
-
-				errPayload := map[string]string{
-					"error": "failed to send message",
+				for _, entry := range m.Entries {
+					entryStrings = append(
+						entryStrings,
+						fmt.Sprintf(
+							"%s",
+							entry.Command,
+						),
+					)
 				}
 
-				json.NewEncoder(rw).Encode(errPayload)
+				p.respondWithFailure(
+					rw,
+					fmt.Sprintf(
+						"failed to send message with entries, %s\n",
+						strings.Join(entryStrings, ", "),
+					),
+					http.StatusBadRequest,
+				)
 			}
 		},
 	)

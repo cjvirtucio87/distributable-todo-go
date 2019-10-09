@@ -79,9 +79,13 @@ func TestSend(t *testing.T) {
 			t.Error(fmt.Printf("expectedPeerLogCount %d, was %d", expectedPeerLogCount, actualPeerLogCount))
 		}
 
-		actualPeerEntry := p.Entry(0)
+		id := 0
 
-		if expectedEntry != actualPeerEntry {
+		actualPeerEntry, ok := p.Entry(id)
+
+		if !ok {
+			t.Error(fmt.Printf("unable to retrieve entry with id %d\n", id))
+		} else if expectedEntry != actualPeerEntry {
 			t.Error(fmt.Printf("expectedEntry %v, was %v", expectedEntry.Command, actualPeerEntry.Command))
 		}
 	}

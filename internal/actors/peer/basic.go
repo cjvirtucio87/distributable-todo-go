@@ -23,8 +23,21 @@ func (p *basicPeer) AddPeer(otherPeer Peer) {
 	p.NextIndexMap[otherPeer.Id()] = len(p.log)
 }
 
-func (p *basicPeer) Entry(idx int) Entry {
-	return p.log[idx]
+func (p *basicPeer) Entry(idx int) (Entry, bool) {
+	var result Entry
+	ok := true
+
+	if len(p.log) <= idx {
+		ok = false
+	} else {
+		result = p.log[idx]
+
+		if &result == nil {
+			ok = false
+		}
+	}
+
+	return result, ok
 }
 
 func (p *basicPeer) Followers() []Peer {
