@@ -44,7 +44,9 @@ func (p *httpPeer) Entry(id int) Entry {
 
 	jsonStr, err := json.Marshal(e)
 
-	log.Printf("json: %s\n", jsonStr)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	res, err := http.Post(
 		fmt.Sprintf(
