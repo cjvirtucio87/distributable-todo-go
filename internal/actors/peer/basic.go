@@ -19,8 +19,6 @@ func (p *basicPeer) AddEntries(e EntryInfo) bool {
 
 func (p *basicPeer) AddPeer(otherPeer Peer) {
 	p.peers = append(p.peers, otherPeer)
-
-	p.NextIndexMap[otherPeer.Id()] = len(p.log)
 }
 
 func (p *basicPeer) Entry(idx int) (Entry, bool) {
@@ -45,6 +43,10 @@ func (p *basicPeer) Followers() []Peer {
 }
 
 func (p *basicPeer) Init() error {
+	for _, otherPeer := range p.peers {
+		p.NextIndexMap[otherPeer.Id()] = len(p.log)
+	}
+
 	return nil
 }
 

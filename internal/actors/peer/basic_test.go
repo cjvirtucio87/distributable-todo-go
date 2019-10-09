@@ -14,7 +14,7 @@ func TestAddPeer(t *testing.T) {
 	actualCount := leader.PeerCount()
 
 	if expectedCount != actualCount {
-		t.Error(fmt.Printf("expectedCount %d, was %d", expectedCount, actualCount))
+		t.Fatal(fmt.Printf("expectedCount %d, was %d", expectedCount, actualCount))
 	}
 }
 
@@ -35,7 +35,7 @@ func TestSend(t *testing.T) {
 	)
 
 	if expectedSendResult != actualSendResult {
-		t.Error(fmt.Printf("expectedSendResult %t, was %t", expectedSendResult, actualSendResult))
+		t.Fatal(fmt.Printf("expectedSendResult %t, was %t", expectedSendResult, actualSendResult))
 	}
 
 	leader = NewBasicPeer(0)
@@ -67,7 +67,7 @@ func TestSend(t *testing.T) {
 	)
 
 	if expectedSendResult != actualSendResult {
-		t.Error(fmt.Printf("expectedSendResult %t, was %t", expectedSendResult, actualSendResult))
+		t.Fatal(fmt.Printf("expectedSendResult %t, was %t", expectedSendResult, actualSendResult))
 	}
 
 	expectedPeerLogCount := 1
@@ -76,7 +76,7 @@ func TestSend(t *testing.T) {
 		actualPeerLogCount := p.LogCount()
 
 		if expectedPeerLogCount != actualPeerLogCount {
-			t.Error(fmt.Printf("expectedPeerLogCount %d, was %d", expectedPeerLogCount, actualPeerLogCount))
+			t.Fatal(fmt.Printf("expectedPeerLogCount %d, was %d", expectedPeerLogCount, actualPeerLogCount))
 		}
 
 		id := 0
@@ -84,9 +84,9 @@ func TestSend(t *testing.T) {
 		actualPeerEntry, ok := p.Entry(id)
 
 		if !ok {
-			t.Error(fmt.Printf("unable to retrieve entry with id %d\n", id))
+			t.Fatal(fmt.Printf("unable to retrieve entry with id %d\n", id))
 		} else if expectedEntry != actualPeerEntry {
-			t.Error(fmt.Printf("expectedEntry %v, was %v", expectedEntry.Command, actualPeerEntry.Command))
+			t.Fatal(fmt.Printf("expectedEntry %v, was %v", expectedEntry.Command, actualPeerEntry.Command))
 		}
 	}
 }

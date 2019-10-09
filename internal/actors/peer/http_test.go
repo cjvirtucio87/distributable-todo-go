@@ -32,7 +32,11 @@ func TestLogCountHttp(t *testing.T) {
 	}
 
 	for _, follower := range followers {
-		follower.Init()
+		err := follower.Init()
+
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		leader.AddPeer(follower)
 	}
@@ -40,7 +44,7 @@ func TestLogCountHttp(t *testing.T) {
 	err := leader.Init()
 
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	expectedLogCount := 0
@@ -49,7 +53,7 @@ func TestLogCountHttp(t *testing.T) {
 		actualLogCount := follower.LogCount()
 
 		if expectedLogCount != actualLogCount {
-			t.Error(fmt.Printf("expected %d, was %d", expectedLogCount, actualLogCount))
+			t.Fatal(fmt.Printf("expected %d, was %d", expectedLogCount, actualLogCount))
 		}
 	}
 }
@@ -87,14 +91,14 @@ func TestPeerCountHttp(t *testing.T) {
 	err := leader.Init()
 
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	expectedCount := len(followers)
 	actualCount := leader.PeerCount()
 
 	if expectedCount != actualCount {
-		t.Error(fmt.Printf("expected %d, was %d", expectedCount, actualCount))
+		t.Fatal(fmt.Printf("expected %d, was %d", expectedCount, actualCount))
 	}
 }
 
@@ -145,7 +149,7 @@ func TestSendHttp(t *testing.T) {
 	err := leader.Init()
 
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	expectedSendResult := true
@@ -159,7 +163,7 @@ func TestSendHttp(t *testing.T) {
 	)
 
 	if expectedSendResult != actualSendResult {
-		t.Error(fmt.Printf("expectedSendResult %t, was %t\n", expectedSendResult, actualSendResult))
+		t.Fatal(fmt.Printf("expectedSendResult %t, was %t\n", expectedSendResult, actualSendResult))
 	}
 
 	expectedPeerLogCount := 1
@@ -168,7 +172,7 @@ func TestSendHttp(t *testing.T) {
 		actualPeerLogCount := p.LogCount()
 
 		if expectedPeerLogCount != actualPeerLogCount {
-			t.Error(fmt.Printf("expectedPeerLogCount %d, was %d\n", expectedPeerLogCount, actualPeerLogCount))
+			t.Fatal(fmt.Printf("expectedPeerLogCount %d, was %d\n", expectedPeerLogCount, actualPeerLogCount))
 		}
 
 		id := 0
@@ -176,9 +180,9 @@ func TestSendHttp(t *testing.T) {
 		actualPeerEntry, ok := p.Entry(id)
 
 		if !ok {
-			t.Error(fmt.Printf("unable to retrieve entry with id %d\n", id))
+			t.Fatal(fmt.Printf("unable to retrieve entry with id %d\n", id))
 		} else if expectedEntry != actualPeerEntry {
-			t.Error(fmt.Printf("expectedEntry %v, was %v", expectedEntry.Command, actualPeerEntry.Command))
+			t.Fatal(fmt.Printf("expectedEntry %v, was %v", expectedEntry.Command, actualPeerEntry.Command))
 		}
 	}
 }
