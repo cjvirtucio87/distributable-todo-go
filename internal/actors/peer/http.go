@@ -10,6 +10,11 @@ import (
 	"strconv"
 )
 
+const (
+	HeaderContentType      = "Content-Type"
+	ContentApplicationJson = "application/json"
+)
+
 type httpPeer struct {
 	basicPeer
 	server *http.Server
@@ -26,7 +31,7 @@ func (p *httpPeer) AddEntries(e EntryInfo) bool {
 			"%s/log/addEntries",
 			p.Url(),
 		),
-		"application/json",
+		ContentApplicationJson,
 		bytes.NewBuffer(jsonStr),
 	)
 
@@ -53,7 +58,7 @@ func (p *httpPeer) Entry(id int) Entry {
 			"%s/log/entry",
 			p.Url(),
 		),
-		"application/json",
+		ContentApplicationJson,
 		bytes.NewBuffer(jsonStr),
 	)
 
@@ -110,8 +115,8 @@ func (p *httpPeer) Init() error {
 
 			if err != nil {
 				rw.Header().Set(
-					"Content-Type",
-					"application/json",
+					HeaderContentType,
+					ContentApplicationJson,
 				)
 
 				rw.WriteHeader(http.StatusBadRequest)
@@ -136,8 +141,8 @@ func (p *httpPeer) Init() error {
 			entry := p.basicPeer.Entry(entryId)
 
 			rw.Header().Set(
-				"Content-Type",
-				"application/json",
+				HeaderContentType,
+				ContentApplicationJson,
 			)
 
 			rw.WriteHeader(http.StatusOK)
@@ -159,8 +164,8 @@ func (p *httpPeer) Init() error {
 
 			if err != nil {
 				rw.Header().Set(
-					"Content-Type",
-					"application/json",
+					HeaderContentType,
+					ContentApplicationJson,
 				)
 
 				rw.WriteHeader(http.StatusBadRequest)
@@ -182,8 +187,8 @@ func (p *httpPeer) Init() error {
 				rw.WriteHeader(http.StatusOK)
 			} else {
 				rw.Header().Set(
-					"Content-Type",
-					"application/json",
+					HeaderContentType,
+					ContentApplicationJson,
 				)
 
 				rw.WriteHeader(http.StatusBadRequest)
@@ -210,8 +215,8 @@ func (p *httpPeer) Init() error {
 
 			if err != nil {
 				rw.Header().Set(
-					"Content-Type",
-					"application/json",
+					HeaderContentType,
+					ContentApplicationJson,
 				)
 
 				rw.WriteHeader(http.StatusBadRequest)
@@ -229,8 +234,8 @@ func (p *httpPeer) Init() error {
 				rw.WriteHeader(http.StatusOK)
 			} else {
 				rw.Header().Set(
-					"Content-Type",
-					"application/json",
+					HeaderContentType,
+					ContentApplicationJson,
 				)
 
 				rw.WriteHeader(http.StatusBadRequest)
@@ -332,7 +337,7 @@ func (p *httpPeer) Send(m Message) bool {
 			"%s/log/send",
 			p.Url(),
 		),
-		"application/json",
+		ContentApplicationJson,
 		bytes.NewBuffer(jsonStr),
 	)
 
