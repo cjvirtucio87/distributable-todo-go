@@ -63,9 +63,7 @@ func (p *httpPeer) Entry(id int) Entry {
 
 	var result Entry
 
-	decoder := json.NewDecoder(res.Body)
-
-	err = decoder.Decode(&result)
+	err = json.NewDecoder(res.Body).Decode(&result)
 
 	if err != nil {
 		log.Fatal(err)
@@ -106,9 +104,9 @@ func (p *httpPeer) Init() error {
 
 			decoder := json.NewDecoder(req.Body)
 
-			var e map[string]int
+			var entryMap map[string]int
 
-			err := decoder.Decode(&e)
+			err := decoder.Decode(&entryMap)
 
 			if err != nil {
 				rw.Header().Set(
@@ -125,7 +123,7 @@ func (p *httpPeer) Init() error {
 				json.NewEncoder(rw).Encode(errPayload)
 			}
 
-			entryId := e["EntryId"]
+			entryId := entryMap["EntryId"]
 
 			if err != nil {
 				log.Fatal(err)
@@ -167,7 +165,11 @@ func (p *httpPeer) Init() error {
 					"error": err.Error(),
 				}
 
-				json.NewEncoder(rw).Encode(errPayload)
+				err = json.NewEncoder(rw).Encode(errPayload)
+
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 
 			result := p.basicPeer.AddEntries(e)
