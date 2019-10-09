@@ -104,11 +104,9 @@ func (p *httpPeer) Init() error {
 		func(rw http.ResponseWriter, req *http.Request) {
 			defer req.Body.Close()
 
-			decoder := json.NewDecoder(req.Body)
-
 			var entryMap map[string]int
 
-			err := decoder.Decode(&entryMap)
+			err := json.NewDecoder(req.Body).Decode(&entryMap)
 
 			if err != nil {
 				rw.Header().Set(
@@ -122,7 +120,11 @@ func (p *httpPeer) Init() error {
 					"error": err.Error(),
 				}
 
-				json.NewEncoder(rw).Encode(errPayload)
+				err = json.NewEncoder(rw).Encode(errPayload)
+
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 
 			entryId := entryMap["EntryId"]
