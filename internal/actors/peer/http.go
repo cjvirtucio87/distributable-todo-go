@@ -44,25 +44,6 @@ func (p *httpPeer) AddEntries(e EntryInfo) bool {
 	return res.StatusCode == http.StatusOK
 }
 
-func (p *httpPeer) respondWithFailure(rw http.ResponseWriter, msg string, status int) {
-	rw.Header().Set(
-		HeaderContentType,
-		ContentApplicationJson,
-	)
-
-	rw.WriteHeader(status)
-
-	errPayload := map[string]string{
-		"error": msg,
-	}
-
-	err := json.NewEncoder(rw).Encode(errPayload)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 func (p *httpPeer) Entry(id int) (Entry, bool) {
 	e := map[string]int{
 		entryIdKey: id,
@@ -365,6 +346,25 @@ func (p *httpPeer) PeerCount() int {
 	}
 
 	return result
+}
+
+func (p *httpPeer) respondWithFailure(rw http.ResponseWriter, msg string, status int) {
+	rw.Header().Set(
+		HeaderContentType,
+		ContentApplicationJson,
+	)
+
+	rw.WriteHeader(status)
+
+	errPayload := map[string]string{
+		"error": msg,
+	}
+
+	err := json.NewEncoder(rw).Encode(errPayload)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func (p *httpPeer) Send(m Message) bool {
