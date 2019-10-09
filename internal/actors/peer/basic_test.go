@@ -1,7 +1,6 @@
 package actors
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -14,7 +13,7 @@ func TestAddPeer(t *testing.T) {
 	actualCount := leader.PeerCount()
 
 	if expectedCount != actualCount {
-		t.Fatal(fmt.Printf("expectedCount %d, was %d", expectedCount, actualCount))
+		t.Fatalf("expectedCount %d, was %d", expectedCount, actualCount)
 	}
 }
 
@@ -35,7 +34,7 @@ func TestSend(t *testing.T) {
 	)
 
 	if expectedSendResult != actualSendResult {
-		t.Fatal(fmt.Printf("expectedSendResult %t, was %t", expectedSendResult, actualSendResult))
+		t.Fatalf("expectedSendResult %t, was %t", expectedSendResult, actualSendResult)
 	}
 
 	leader = NewBasicPeer(0)
@@ -67,7 +66,7 @@ func TestSend(t *testing.T) {
 	)
 
 	if expectedSendResult != actualSendResult {
-		t.Fatal(fmt.Printf("expectedSendResult %t, was %t", expectedSendResult, actualSendResult))
+		t.Fatalf("expectedSendResult %t, was %t", expectedSendResult, actualSendResult)
 	}
 
 	expectedPeerLogCount := 1
@@ -76,7 +75,7 @@ func TestSend(t *testing.T) {
 		actualPeerLogCount := p.LogCount()
 
 		if expectedPeerLogCount != actualPeerLogCount {
-			t.Fatal(fmt.Printf("expectedPeerLogCount %d, was %d", expectedPeerLogCount, actualPeerLogCount))
+			t.Fatalf("expectedPeerLogCount %d, was %d", expectedPeerLogCount, actualPeerLogCount)
 		}
 
 		id := 0
@@ -84,9 +83,9 @@ func TestSend(t *testing.T) {
 		actualPeerEntry, ok := p.Entry(id)
 
 		if !ok {
-			t.Fatal(fmt.Printf("unable to retrieve entry with id %d\n", id))
+			t.Fatalf("unable to retrieve entry with id %d\n", id)
 		} else if expectedEntry != actualPeerEntry {
-			t.Fatal(fmt.Printf("expectedEntry %v, was %v", expectedEntry.Command, actualPeerEntry.Command))
+			t.Fatalf("expectedEntry %v, was %v", expectedEntry.Command, actualPeerEntry.Command)
 		}
 	}
 }
