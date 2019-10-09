@@ -135,10 +135,6 @@ func (p *httpPeer) Init() error {
 
 			entryId := entryMap[entryIdKey]
 
-			if err != nil {
-				log.Fatal(err)
-			}
-
 			entry := p.basicPeer.Entry(entryId)
 
 			rw.Header().Set(
@@ -148,7 +144,11 @@ func (p *httpPeer) Init() error {
 
 			rw.WriteHeader(http.StatusOK)
 
-			json.NewEncoder(rw).Encode(entry)
+			err = json.NewEncoder(rw).Encode(entry)
+
+			if err != nil {
+				log.Fatal(err)
+			}
 		},
 	)
 
