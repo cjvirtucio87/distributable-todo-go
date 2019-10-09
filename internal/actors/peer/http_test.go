@@ -1,7 +1,6 @@
 package actors
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -35,7 +34,7 @@ func TestLogCountHttp(t *testing.T) {
 		err := follower.Init()
 
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf(err.Error())
 		}
 
 		leader.AddPeer(follower)
@@ -44,7 +43,7 @@ func TestLogCountHttp(t *testing.T) {
 	err := leader.Init()
 
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf(err.Error())
 	}
 
 	expectedLogCount := 0
@@ -53,7 +52,7 @@ func TestLogCountHttp(t *testing.T) {
 		actualLogCount := follower.LogCount()
 
 		if expectedLogCount != actualLogCount {
-			t.Fatal(fmt.Printf("expected %d, was %d", expectedLogCount, actualLogCount))
+			t.Fatalf("expected %d, was %d", expectedLogCount, actualLogCount)
 		}
 	}
 }
@@ -91,14 +90,14 @@ func TestPeerCountHttp(t *testing.T) {
 	err := leader.Init()
 
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf(err.Error())
 	}
 
 	expectedCount := len(followers)
 	actualCount := leader.PeerCount()
 
 	if expectedCount != actualCount {
-		t.Fatal(fmt.Printf("expected %d, was %d", expectedCount, actualCount))
+		t.Fatalf("expected %d, was %d", expectedCount, actualCount)
 	}
 }
 
@@ -149,7 +148,7 @@ func TestSendHttp(t *testing.T) {
 	err := leader.Init()
 
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf(err.Error())
 	}
 
 	expectedSendResult := true
@@ -171,7 +170,7 @@ func TestSendHttp(t *testing.T) {
 	)
 
 	if expectedSendResult != actualSendResult {
-		t.Fatal(fmt.Printf("expectedSendResult %t, was %t\n", expectedSendResult, actualSendResult))
+		t.Fatalf("expectedSendResult %t, was %t\n", expectedSendResult, actualSendResult)
 	}
 
 	expectedPeerLogCount := len(expectedEntries)
@@ -180,7 +179,7 @@ func TestSendHttp(t *testing.T) {
 		actualPeerLogCount := p.LogCount()
 
 		if expectedPeerLogCount != actualPeerLogCount {
-			t.Fatal(fmt.Printf("expectedPeerLogCount %d, was %d\n", expectedPeerLogCount, actualPeerLogCount))
+			t.Fatalf("expectedPeerLogCount %d, was %d\n", expectedPeerLogCount, actualPeerLogCount)
 		}
 
 		id := expectedPeerLogCount - 1
@@ -189,11 +188,11 @@ func TestSendHttp(t *testing.T) {
 		actualPeerEntry, ok := p.Entry(id)
 
 		if !ok {
-			t.Fatal(fmt.Printf("unable to retrieve entry with id %d\n", id))
+			t.Fatalf("unable to retrieve entry with id %d\n", id)
 		} else if expectedLatestEntry != actualPeerEntry {
-			t.Fatal(fmt.Printf("expectedLatestEntry %v, was %v", expectedLatestEntry.Command, actualPeerEntry.Command))
+			t.Fatalf("expectedLatestEntry %v, was %v", expectedLatestEntry.Command, actualPeerEntry.Command)
 		} else if expectedLatestEntry.Id != actualPeerEntry.Id {
-			t.Fatal(fmt.Printf("expectedLatestEntry %v, was %v", expectedLatestEntry.Id, actualPeerEntry.Id))
+			t.Fatalf("expectedLatestEntry %v, was %v", expectedLatestEntry.Id, actualPeerEntry.Id)
 		}
 	}
 }
