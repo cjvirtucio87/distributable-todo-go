@@ -3,6 +3,7 @@ package actors
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -91,6 +92,12 @@ func (p *httpPeer) Entry(id int) (Entry, bool) {
 }
 
 func (p *httpPeer) Init() error {
+	p.basicPeer.Init()
+
+	if len(p.basicPeer.NextIndexMap) != len(p.peers) {
+		return errors.New("peer.NextIndexMap not initialized")
+	}
+
 	sm := http.NewServeMux()
 
 	sm.HandleFunc(
