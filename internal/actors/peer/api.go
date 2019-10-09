@@ -18,6 +18,7 @@ type EntryInfo struct {
 }
 
 type Entry struct {
+	Id      int
 	Command string
 }
 

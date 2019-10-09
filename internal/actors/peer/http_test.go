@@ -153,12 +153,20 @@ func TestSendHttp(t *testing.T) {
 	}
 
 	expectedSendResult := true
-	expectedEntry := Entry{Command: "doFoo"}
+	expectedEntries := []Entry{
+		Entry{
+			Command: "doHip",
+		},
+		Entry{
+			Command: "doBar",
+		},
+		Entry{
+			Command: "doFoo",
+		},
+	}
 	actualSendResult := leader.Send(
 		Message{
-			Entries: []Entry{
-				expectedEntry,
-			},
+			Entries: expectedEntries,
 		},
 	)
 
@@ -166,7 +174,7 @@ func TestSendHttp(t *testing.T) {
 		t.Fatal(fmt.Printf("expectedSendResult %t, was %t\n", expectedSendResult, actualSendResult))
 	}
 
-	expectedPeerLogCount := 1
+	expectedPeerLogCount := len(expectedEntries)
 
 	for _, p := range leader.Followers() {
 		actualPeerLogCount := p.LogCount()
@@ -175,14 +183,17 @@ func TestSendHttp(t *testing.T) {
 			t.Fatal(fmt.Printf("expectedPeerLogCount %d, was %d\n", expectedPeerLogCount, actualPeerLogCount))
 		}
 
-		id := 0
+		id := expectedPeerLogCount - 1
 
+		expectedLatestEntry := expectedEntries[id]
 		actualPeerEntry, ok := p.Entry(id)
 
 		if !ok {
 			t.Fatal(fmt.Printf("unable to retrieve entry with id %d\n", id))
-		} else if expectedEntry != actualPeerEntry {
-			t.Fatal(fmt.Printf("expectedEntry %v, was %v", expectedEntry.Command, actualPeerEntry.Command))
+		} else if expectedLatestEntry != actualPeerEntry {
+			t.Fatal(fmt.Printf("expectedLatestEntry %v, was %v", expectedLatestEntry.Command, actualPeerEntry.Command))
+		} else if expectedLatestEntry.Id != actualPeerEntry.Id {
+			t.Fatal(fmt.Printf("expectedLatestEntry %v, was %v", expectedLatestEntry.Id, actualPeerEntry.Id))
 		}
 	}
 }

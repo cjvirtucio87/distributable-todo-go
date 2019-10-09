@@ -8,8 +8,15 @@ type basicPeer struct {
 }
 
 func (p *basicPeer) AddEntries(e EntryInfo) bool {
-	if e.NextIndex > p.LogCount()+1 {
+	latestIndex := p.LogCount() + 1
+
+	if e.NextIndex > latestIndex {
 		return false
+	}
+
+	for _, entry := range e.Entries {
+		entry.Id = latestIndex
+		latestIndex++
 	}
 
 	p.log = append(p.log[:e.NextIndex], e.Entries...)
