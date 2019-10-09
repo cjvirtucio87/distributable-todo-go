@@ -8,7 +8,7 @@ type basicPeer struct {
 }
 
 func (p *basicPeer) AddEntries(e EntryInfo) bool {
-	if e.NextIndex > len(p.log)+1 {
+	if e.NextIndex > p.LogCount()+1 {
 		return false
 	}
 
@@ -25,7 +25,7 @@ func (p *basicPeer) Entry(idx int) (Entry, bool) {
 	var result Entry
 	ok := true
 
-	if len(p.log) <= idx {
+	if p.LogCount() <= idx {
 		ok = false
 	} else {
 		result = p.log[idx]
@@ -44,7 +44,7 @@ func (p *basicPeer) Followers() []Peer {
 
 func (p *basicPeer) Init() error {
 	for _, otherPeer := range p.peers {
-		p.NextIndexMap[otherPeer.Id()] = len(p.log)
+		p.NextIndexMap[otherPeer.Id()] = p.LogCount()
 	}
 
 	return nil
@@ -99,7 +99,7 @@ func (p *basicPeer) Send(m Message) bool {
 		}
 	}
 
-	if successfulAppendCount != len(p.peers) {
+	if successfulAppendCount != p.PeerCount() {
 		return false
 	}
 
