@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	entryIdKey             = "EntryId"
 	HeaderContentType      = "Content-Type"
 	ContentApplicationJson = "application/json"
 )
@@ -44,7 +45,7 @@ func (p *httpPeer) AddEntries(e EntryInfo) bool {
 
 func (p *httpPeer) Entry(id int) Entry {
 	e := map[string]int{
-		"EntryId": id,
+		entryIdKey: id,
 	}
 
 	jsonStr, err := json.Marshal(e)
@@ -132,7 +133,7 @@ func (p *httpPeer) Init() error {
 				}
 			}
 
-			entryId := entryMap["EntryId"]
+			entryId := entryMap[entryIdKey]
 
 			if err != nil {
 				log.Fatal(err)
