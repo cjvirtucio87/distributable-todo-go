@@ -15,14 +15,13 @@ func (l *BasicLog) Count() int {
 }
 
 func (l *BasicLog) Entry(idx int) (dto.Entry, bool) {
-	ok := true
 	e := l.backend[idx]
 
 	if &e == nil {
-		ok = false
+		return e, false
 	}
 
-	return e, ok
+	return e, true
 }
 
 func (l *BasicLog) Entries(start, end int) ([]dto.Entry, bool) {
