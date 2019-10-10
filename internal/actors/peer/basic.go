@@ -2,12 +2,12 @@ package actors
 
 import (
 	"cjvirtucio87/distributed-todo-go/internal/dto"
-	"cjvirtucio87/distributed-todo-go/internal/log"
+	"cjvirtucio87/distributed-todo-go/internal/rlog"
 )
 
 type basicPeer struct {
 	id           int
-	log          log.Log
+	rlog         rlog.Log
 	NextIndexMap map[int]int
 	peers        []Peer
 }
@@ -24,7 +24,7 @@ func (p *basicPeer) AddEntries(e dto.EntryInfo) bool {
 		latestIndex++
 	}
 
-	p.log.AddEntries(e)
+	p.rlog.AddEntries(e)
 
 	return true
 }
@@ -40,7 +40,7 @@ func (p *basicPeer) Entry(idx int) (dto.Entry, bool) {
 	if p.LogCount() <= idx {
 		ok = false
 	} else {
-		result, ok = p.log.Entry(idx)
+		result, ok = p.rlog.Entry(idx)
 	}
 
 	return result, ok
@@ -59,7 +59,7 @@ func (p *basicPeer) Init() error {
 }
 
 func (p *basicPeer) LogCount() int {
-	return p.log.Count()
+	return p.rlog.Count()
 }
 
 func (p *basicPeer) PeerCount() int {
@@ -71,9 +71,9 @@ func (p *basicPeer) Id() int {
 }
 
 func (p *basicPeer) Send(m dto.Message) bool {
-	p.log.AddEntries(
+	p.rlog.AddEntries(
 		dto.EntryInfo{
-			NextIndex: p.log.Count(),
+			NextIndex: p.rlog.Count(),
 			Entries:   m.Entries,
 		},
 	)
@@ -84,9 +84,9 @@ func (p *basicPeer) Send(m dto.Message) bool {
 		otherPeerId := otherPeer.Id()
 		nextIndex := p.NextIndexMap[otherPeerId]
 
-		entries, ok := p.log.Entries(
+		entries, ok := p.rlog.Entries(
 			nextIndex,
-			p.log.Count(),
+			p.rlog.Count(),
 		)
 
 		if !ok {

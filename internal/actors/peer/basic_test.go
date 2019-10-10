@@ -2,7 +2,7 @@ package actors
 
 import (
 	"cjvirtucio87/distributed-todo-go/internal/dto"
-	"cjvirtucio87/distributed-todo-go/internal/log"
+	"cjvirtucio87/distributed-todo-go/internal/rlog"
 	"testing"
 )
 
@@ -44,8 +44,8 @@ func TestSend(t *testing.T) {
 		leader.AddPeer(
 			&basicPeer{
 				id: i,
-				log: log.NewBasicLog(
-					log.WithBackend(
+				rlog: rlog.NewBasicLog(
+					rlog.WithBackend(
 						[]dto.Entry{
 							dto.Entry{
 								Command: "not supposed to be here",

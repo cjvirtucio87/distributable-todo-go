@@ -2,7 +2,7 @@ package actors
 
 import (
 	"cjvirtucio87/distributed-todo-go/internal/dto"
-	"cjvirtucio87/distributed-todo-go/internal/log"
+	"cjvirtucio87/distributed-todo-go/internal/rlog"
 )
 
 type Peer interface {
@@ -20,7 +20,7 @@ type Peer interface {
 func NewBasicPeer(id int) Peer {
 	return &basicPeer{
 		id:           id,
-		log:          log.NewBasicLog(),
+		rlog:         rlog.NewBasicLog(),
 		NextIndexMap: map[int]int{},
 		peers:        []Peer{},
 	}
@@ -30,7 +30,7 @@ func NewHttpPeer(scheme, host string, port, id int) Peer {
 	p := &httpPeer{
 		basicPeer: basicPeer{
 			id:           id,
-			log:          log.NewBasicLog(),
+			rlog:         rlog.NewBasicLog(),
 			NextIndexMap: map[int]int{},
 			peers:        []Peer{},
 		},

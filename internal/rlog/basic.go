@@ -1,4 +1,4 @@
-package log
+package rlog
 
 import "cjvirtucio87/distributed-todo-go/internal/dto"
 
