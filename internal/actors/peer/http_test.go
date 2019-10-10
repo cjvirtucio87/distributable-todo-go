@@ -2,6 +2,7 @@ package actors
 
 import (
 	"cjvirtucio87/distributed-todo-go/internal/dto"
+	"cjvirtucio87/distributed-todo-go/internal/log"
 	"testing"
 )
 
@@ -125,14 +126,18 @@ func TestSendHttp(t *testing.T) {
 				port:   leaderPort + i,
 				basicPeer: basicPeer{
 					id: i,
-					log: []dto.Entry{
-						dto.Entry{
-							Command: "not supposed to be here",
-						},
-						dto.Entry{
-							Command: "not supposed to be here either",
-						},
-					},
+					log: log.NewBasicLog(
+						log.WithBackend(
+							[]dto.Entry{
+								dto.Entry{
+									Command: "not supposed to be here",
+								},
+								dto.Entry{
+									Command: "not supposed to be here either",
+								},
+							},
+						),
+					),
 					NextIndexMap: map[int]int{},
 					peers:        []Peer{},
 				},

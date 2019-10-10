@@ -6,7 +6,8 @@ type BasicLog struct {
 	backend []dto.Entry
 }
 
-func (l *BasicLog) AddEntries(entries []dto.Entry) {
+func (l *BasicLog) AddEntries(e dto.EntryInfo) {
+	l.backend = append(l.backend[:e.NextIndex], e.Entries...)
 }
 
 func (l *BasicLog) Count() int {
@@ -14,13 +15,20 @@ func (l *BasicLog) Count() int {
 }
 
 func (l *BasicLog) Entry(idx int) (dto.Entry, bool) {
-	var e dto.Entry
+	ok := true
+	e := l.backend[idx]
 
-	return e, false
+	if &e == nil {
+		ok = false
+	}
+
+	return e, ok
 }
 
-func NewBasicLog() Log {
-	return &BasicLog{
-		backend: []dto.Entry{},
+func (l *BasicLog) Entries(start, end int) ([]dto.Entry, bool) {
+	if start < 0 || end > l.Count() {
+		return []dto.Entry{}, false
 	}
+
+	return l.backend[start:end], true
 }

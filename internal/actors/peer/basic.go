@@ -1,10 +1,13 @@
 package actors
 
-import "cjvirtucio87/distributed-todo-go/internal/dto"
+import (
+	"cjvirtucio87/distributed-todo-go/internal/dto"
+	"cjvirtucio87/distributed-todo-go/internal/log"
+)
 
 type basicPeer struct {
 	id           int
-	log          []dto.Entry
+	log          log.Log
 	NextIndexMap map[int]int
 	peers        []Peer
 }
@@ -21,7 +24,7 @@ func (p *basicPeer) AddEntries(e dto.EntryInfo) bool {
 		latestIndex++
 	}
 
-	p.log = append(p.log[:e.NextIndex], e.Entries...)
+	p.log.AddEntries(e)
 
 	return true
 }
@@ -37,11 +40,7 @@ func (p *basicPeer) Entry(idx int) (dto.Entry, bool) {
 	if p.LogCount() <= idx {
 		ok = false
 	} else {
-		result = p.log[idx]
-
-		if &result == nil {
-			ok = false
-		}
+		result, ok = p.log.Entry(idx)
 	}
 
 	return result, ok
@@ -60,7 +59,7 @@ func (p *basicPeer) Init() error {
 }
 
 func (p *basicPeer) LogCount() int {
-	return len(p.log)
+	return p.log.Count()
 }
 
 func (p *basicPeer) PeerCount() int {
@@ -72,7 +71,12 @@ func (p *basicPeer) Id() int {
 }
 
 func (p *basicPeer) Send(m dto.Message) bool {
-	p.log = append(p.log, m.Entries...)
+	p.log.AddEntries(
+		dto.EntryInfo{
+			NextIndex: p.log.Count(),
+			Entries:   m.Entries,
+		},
+	)
 
 	var successfulAppendCount int
 
@@ -80,9 +84,18 @@ func (p *basicPeer) Send(m dto.Message) bool {
 		otherPeerId := otherPeer.Id()
 		nextIndex := p.NextIndexMap[otherPeerId]
 
+		entries, ok := p.log.Entries(
+			nextIndex,
+			p.log.Count(),
+		)
+
+		if !ok {
+			return false
+		}
+
 		successfulAppend := otherPeer.AddEntries(
 			dto.EntryInfo{
-				Entries:   p.log[nextIndex:],
+				Entries:   entries,
 				NextIndex: nextIndex,
 			},
 		)
@@ -91,7 +104,7 @@ func (p *basicPeer) Send(m dto.Message) bool {
 			for nextIndex := p.NextIndexMap[otherPeerId]; nextIndex >= 0; nextIndex-- {
 				successfulAppend = otherPeer.AddEntries(
 					dto.EntryInfo{
-						Entries:   p.log[nextIndex:],
+						Entries:   entries,
 						NextIndex: nextIndex,
 					},
 				)

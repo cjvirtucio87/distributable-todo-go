@@ -1,6 +1,9 @@
 package actors
 
-import "cjvirtucio87/distributed-todo-go/internal/dto"
+import (
+	"cjvirtucio87/distributed-todo-go/internal/dto"
+	"cjvirtucio87/distributed-todo-go/internal/log"
+)
 
 type Peer interface {
 	AddEntries(e dto.EntryInfo) bool
@@ -17,7 +20,7 @@ type Peer interface {
 func NewBasicPeer(id int) Peer {
 	return &basicPeer{
 		id:           id,
-		log:          []dto.Entry{},
+		log:          log.NewBasicLog(),
 		NextIndexMap: map[int]int{},
 		peers:        []Peer{},
 	}
@@ -27,7 +30,7 @@ func NewHttpPeer(scheme, host string, port, id int) Peer {
 	p := &httpPeer{
 		basicPeer: basicPeer{
 			id:           id,
-			log:          []dto.Entry{},
+			log:          log.NewBasicLog(),
 			NextIndexMap: map[int]int{},
 			peers:        []Peer{},
 		},
