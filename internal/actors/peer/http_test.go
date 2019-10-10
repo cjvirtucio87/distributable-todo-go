@@ -1,6 +1,7 @@
 package actors
 
 import (
+	"cjvirtucio87/distributed-todo-go/internal/dto"
 	"testing"
 )
 
@@ -124,11 +125,11 @@ func TestSendHttp(t *testing.T) {
 				port:   leaderPort + i,
 				basicPeer: basicPeer{
 					id: i,
-					log: []Entry{
-						Entry{
+					log: []dto.Entry{
+						dto.Entry{
 							Command: "not supposed to be here",
 						},
-						Entry{
+						dto.Entry{
 							Command: "not supposed to be here either",
 						},
 					},
@@ -152,19 +153,19 @@ func TestSendHttp(t *testing.T) {
 	}
 
 	expectedSendResult := true
-	expectedEntries := []Entry{
-		Entry{
+	expectedEntries := []dto.Entry{
+		dto.Entry{
 			Command: "doHip",
 		},
-		Entry{
+		dto.Entry{
 			Command: "doBar",
 		},
-		Entry{
+		dto.Entry{
 			Command: "doFoo",
 		},
 	}
 	actualSendResult := leader.Send(
-		Message{
+		dto.Message{
 			Entries: expectedEntries,
 		},
 	)

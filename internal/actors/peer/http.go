@@ -2,6 +2,7 @@ package actors
 
 import (
 	"bytes"
+	"cjvirtucio87/distributed-todo-go/internal/dto"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -25,7 +26,7 @@ type httpPeer struct {
 	scheme string
 }
 
-func (p *httpPeer) AddEntries(e EntryInfo) bool {
+func (p *httpPeer) AddEntries(e dto.EntryInfo) bool {
 	jsonStr, err := json.Marshal(e)
 
 	res, err := http.Post(
@@ -44,7 +45,7 @@ func (p *httpPeer) AddEntries(e EntryInfo) bool {
 	return res.StatusCode == http.StatusOK
 }
 
-func (p *httpPeer) Entry(id int) (Entry, bool) {
+func (p *httpPeer) Entry(id int) (dto.Entry, bool) {
 	e := map[string]int{
 		entryIdKey: id,
 	}
@@ -70,7 +71,7 @@ func (p *httpPeer) Entry(id int) (Entry, bool) {
 
 	defer res.Body.Close()
 
-	var result Entry
+	var result dto.Entry
 	ok := true
 
 	err = json.NewDecoder(res.Body).Decode(&result)
@@ -181,7 +182,7 @@ func (p *httpPeer) Init() error {
 
 			decoder := json.NewDecoder(req.Body)
 
-			var e EntryInfo
+			var e dto.EntryInfo
 
 			err := decoder.Decode(&e)
 
@@ -229,7 +230,7 @@ func (p *httpPeer) Init() error {
 
 			decoder := json.NewDecoder(req.Body)
 
-			var m Message
+			var m dto.Message
 
 			err := decoder.Decode(&m)
 
@@ -369,7 +370,7 @@ func (p *httpPeer) respondWithFailure(rw http.ResponseWriter, msg string, status
 	}
 }
 
-func (p *httpPeer) Send(m Message) bool {
+func (p *httpPeer) Send(m dto.Message) bool {
 	jsonStr, err := json.Marshal(m)
 
 	res, err := http.Post(

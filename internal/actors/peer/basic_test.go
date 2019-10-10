@@ -1,6 +1,7 @@
 package actors
 
 import (
+	"cjvirtucio87/distributed-todo-go/internal/dto"
 	"testing"
 )
 
@@ -26,9 +27,9 @@ func TestSend(t *testing.T) {
 
 	expectedSendResult := true
 	actualSendResult := leader.Send(
-		Message{
-			Entries: []Entry{
-				Entry{Command: "doFoo"},
+		dto.Message{
+			Entries: []dto.Entry{
+				dto.Entry{Command: "doFoo"},
 			},
 		},
 	)
@@ -42,11 +43,11 @@ func TestSend(t *testing.T) {
 		leader.AddPeer(
 			&basicPeer{
 				id: i,
-				log: []Entry{
-					Entry{
+				log: []dto.Entry{
+					dto.Entry{
 						Command: "not supposed to be here",
 					},
-					Entry{
+					dto.Entry{
 						Command: "not supposed to be here either",
 					},
 				},
@@ -56,10 +57,10 @@ func TestSend(t *testing.T) {
 		)
 	}
 
-	expectedEntry := Entry{Command: "doFoo"}
+	expectedEntry := dto.Entry{Command: "doFoo"}
 	actualSendResult = leader.Send(
-		Message{
-			Entries: []Entry{
+		dto.Message{
+			Entries: []dto.Entry{
 				expectedEntry,
 			},
 		},

@@ -1,35 +1,23 @@
 package actors
 
+import "cjvirtucio87/distributed-todo-go/internal/dto"
+
 type Peer interface {
-	AddEntries(e EntryInfo) bool
+	AddEntries(e dto.EntryInfo) bool
 	AddPeer(peer Peer)
-	Entry(idx int) (Entry, bool)
+	Entry(idx int) (dto.Entry, bool)
 	Followers() []Peer
 	Init() error
 	PeerCount() int
 	LogCount() int
 	Id() int
-	Send(m Message) bool
-}
-
-type EntryInfo struct {
-	Entries   []Entry
-	NextIndex int
-}
-
-type Entry struct {
-	Id      int
-	Command string
-}
-
-type Message struct {
-	Entries []Entry
+	Send(m dto.Message) bool
 }
 
 func NewBasicPeer(id int) Peer {
 	return &basicPeer{
 		id:           id,
-		log:          []Entry{},
+		log:          []dto.Entry{},
 		NextIndexMap: map[int]int{},
 		peers:        []Peer{},
 	}
@@ -39,7 +27,7 @@ func NewHttpPeer(scheme, host string, port, id int) Peer {
 	p := &httpPeer{
 		basicPeer: basicPeer{
 			id:           id,
-			log:          []Entry{},
+			log:          []dto.Entry{},
 			NextIndexMap: map[int]int{},
 			peers:        []Peer{},
 		},
