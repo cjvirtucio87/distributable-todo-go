@@ -3,6 +3,7 @@ package actors
 import (
 	"cjvirtucio87/distributed-todo-go/internal/dto"
 	"cjvirtucio87/distributed-todo-go/internal/rlog"
+	"context"
 )
 
 type basicPeer struct {
@@ -131,4 +132,10 @@ func (p *basicPeer) Send(m dto.Message) bool {
 	}
 
 	return true
+}
+
+func (p *basicPeer) Shutdown(ctx context.Context) error {
+	p.NextIndexMap = nil
+
+	return nil
 }

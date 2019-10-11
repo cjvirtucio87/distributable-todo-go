@@ -3,6 +3,7 @@ package actors
 import (
 	"bytes"
 	"cjvirtucio87/distributed-todo-go/internal/dto"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -280,14 +281,8 @@ func (p *httpPeer) Init() error {
 		Handler: sm,
 	}
 
-	// inspired by:
-	// https://github.com/openshift/origin/blob/67ef8497bbcd4f7ea8bc4e0e2daa75ba0c613f20/examples/hello-openshift/hello_openshift.go
 	go func() {
-		err := p.server.ListenAndServe()
-
-		if err != nil {
-			panic("ListenAndServe: " + err.Error())
-		}
+		log.Fatal(p.server.ListenAndServe())
 	}()
 
 	return nil
@@ -396,4 +391,8 @@ func (p *httpPeer) Url() string {
 		p.host,
 		p.port,
 	)
+}
+
+func (p *httpPeer) Shutdown(ctx context.Context) error {
+	return p.server.Shutdown(ctx)
 }

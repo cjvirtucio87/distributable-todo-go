@@ -3,6 +3,7 @@ package actors
 import (
 	"cjvirtucio87/distributed-todo-go/internal/dto"
 	"cjvirtucio87/distributed-todo-go/internal/rlog"
+	"context"
 )
 
 type Peer interface {
@@ -15,6 +16,7 @@ type Peer interface {
 	LogCount() int
 	Id() int
 	Send(m dto.Message) bool
+	Shutdown(ctx context.Context) error
 }
 
 func NewBasicPeer(id int) Peer {
