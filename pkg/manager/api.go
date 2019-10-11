@@ -17,6 +17,7 @@ type HttpManagerConfig struct {
 }
 
 type Manager interface {
+	Healthcheck() error
 	Start()
 	Stop()
 }
