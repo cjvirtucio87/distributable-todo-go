@@ -46,50 +46,30 @@ func (p *httpPeer) AddEntries(e dto.EntryInfo) bool {
 	return res.StatusCode == http.StatusOK
 }
 
-func (p *httpPeer) Entry(id int) (dto.Entry, bool) {
+func (p *httpPeer) Entry(id int) (dto.Entry, error) {
+	var entry dto.Entry
 	e := map[string]int{
 		entryIdKey: id,
 	}
 
-	jsonStr, err := json.Marshal(e)
+	if jsonStr, err := json.Marshal(e); err != nil {
+		return entry, err
+	} else {
+		if res, err := http.Post(
+			fmt.Sprintf(
+				"%s/log/entry",
+				p.Url(),
+			),
+			ContentApplicationJson,
+			bytes.NewBuffer(jsonStr),
+		); err != nil {
+			return entry, err
+		} else {
+			defer res.Body.Close()
 
-	if err != nil {
-		log.Fatal(err)
+			return entry, json.NewDecoder(res.Body).Decode(&entry)
+		}
 	}
-
-	res, err := http.Post(
-		fmt.Sprintf(
-			"%s/log/entry",
-			p.Url(),
-		),
-		ContentApplicationJson,
-		bytes.NewBuffer(jsonStr),
-	)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer res.Body.Close()
-
-	var result dto.Entry
-	ok := true
-
-	err = json.NewDecoder(res.Body).Decode(&result)
-
-	if err != nil {
-		log.Fatal(err)
-		ok = false
-	}
-
-	if &result == nil {
-		log.Fatal(
-			fmt.Sprintf("unable to retrieve entry for id %d", id),
-		)
-		ok = false
-	}
-
-	return result, ok
 }
 
 func (p *httpPeer) Init() error {
@@ -138,9 +118,9 @@ func (p *httpPeer) Init() error {
 
 			entryId := entryMap[entryIdKey]
 
-			entry, ok := p.basicPeer.Entry(entryId)
+			var entry dto.Entry
 
-			if !ok {
+			if entry, err = p.basicPeer.Entry(entryId); err != nil {
 				msg := fmt.Sprintf(
 					"unable to retrieve entry with id %d\n",
 					entryId,

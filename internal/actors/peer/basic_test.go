@@ -86,9 +86,10 @@ func TestSend(t *testing.T) {
 
 		id := 0
 
-		actualPeerEntry, ok := p.Entry(id)
+		var actualPeerEntry dto.Entry
+		var err error
 
-		if !ok {
+		if actualPeerEntry, err = p.Entry(id); err != nil {
 			t.Fatalf("unable to retrieve entry with id %d\n", id)
 		} else if expectedEntry != actualPeerEntry {
 			t.Fatalf("expectedEntry %v, was %v", expectedEntry.Command, actualPeerEntry.Command)

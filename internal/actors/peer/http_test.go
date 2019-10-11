@@ -33,18 +33,14 @@ func TestLogCountHttp(t *testing.T) {
 	}
 
 	for _, follower := range followers {
-		err := follower.Init()
-
-		if err != nil {
+		if err := follower.Init(); err != nil {
 			t.Fatalf(err.Error())
 		}
 
 		leader.AddPeer(follower)
 	}
 
-	err := leader.Init()
-
-	if err != nil {
+	if err := leader.Init(); err != nil {
 		t.Fatalf(err.Error())
 	}
 
@@ -89,9 +85,7 @@ func TestPeerCountHttp(t *testing.T) {
 		leader.AddPeer(follower)
 	}
 
-	err := leader.Init()
-
-	if err != nil {
+	if err := leader.Init(); err != nil {
 		t.Fatalf(err.Error())
 	}
 
@@ -151,9 +145,7 @@ func TestSendHttp(t *testing.T) {
 		leader.AddPeer(follower)
 	}
 
-	err := leader.Init()
-
-	if err != nil {
+	if err := leader.Init(); err != nil {
 		t.Fatalf(err.Error())
 	}
 
@@ -191,10 +183,13 @@ func TestSendHttp(t *testing.T) {
 		id := expectedPeerLogCount - 1
 
 		expectedLatestEntry := expectedEntries[id]
-		actualPeerEntry, ok := p.Entry(id)
 
-		if !ok {
-			t.Fatalf("unable to retrieve entry with id %d\n", id)
+		if actualPeerEntry, err := p.Entry(id); err != nil {
+			t.Fatalf(
+				"unable to retrieve entry with id %d, due to error, %s\n",
+				id,
+				err.Error(),
+			)
 		} else if expectedLatestEntry != actualPeerEntry {
 			t.Fatalf("expectedLatestEntry %v, was %v", expectedLatestEntry.Command, actualPeerEntry.Command)
 		} else if expectedLatestEntry.Id != actualPeerEntry.Id {

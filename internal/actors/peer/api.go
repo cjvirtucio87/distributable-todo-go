@@ -9,7 +9,7 @@ import (
 type Peer interface {
 	AddEntries(e dto.EntryInfo) bool
 	AddPeer(peer Peer)
-	Entry(idx int) (dto.Entry, bool)
+	Entry(idx int) (dto.Entry, error)
 	Followers() []Peer
 	Init() error
 	PeerCount() int

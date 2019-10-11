@@ -4,6 +4,8 @@ import (
 	"cjvirtucio87/distributed-todo-go/internal/dto"
 	"cjvirtucio87/distributed-todo-go/internal/rlog"
 	"context"
+	"errors"
+	"fmt"
 )
 
 type basicPeer struct {
@@ -34,17 +36,22 @@ func (p *basicPeer) AddPeer(otherPeer Peer) {
 	p.peers = append(p.peers, otherPeer)
 }
 
-func (p *basicPeer) Entry(idx int) (dto.Entry, bool) {
-	var result dto.Entry
-	ok := true
+func (p *basicPeer) Entry(idx int) (dto.Entry, error) {
+	var e dto.Entry
+	var err error
 
 	if p.LogCount() <= idx {
-		ok = false
+		err = errors.New(
+			fmt.Sprintf(
+				"idx %d exceeds log boundary",
+				idx,
+			),
+		)
 	} else {
-		result, ok = p.rlog.Entry(idx)
+		e, err = p.rlog.Entry(idx)
 	}
 
-	return result, ok
+	return e, err
 }
 
 func (p *basicPeer) Followers() []Peer {
