@@ -10,10 +10,8 @@ const (
 )
 
 type Loader interface {
-	GetStringSlice(key string)
-	GetInt(key string)
-	GetString(key string)
-	Load()
+	Unmarshal(obj interface{}) error
+	Load() error
 }
 
 func NewViperLoader(filename, filetype string) Loader {
