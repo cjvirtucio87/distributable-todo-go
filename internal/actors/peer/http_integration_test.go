@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestLogCountHttp(t *testing.T) {
+func TestIntegrationLogCountHttp(t *testing.T) {
 	scheme := "http"
 	host := "127.0.0.1"
 	leaderPort := 8080
@@ -57,7 +57,7 @@ func TestLogCountHttp(t *testing.T) {
 	}
 }
 
-func TestPeerCountHttp(t *testing.T) {
+func TestIntegrationPeerCountHttp(t *testing.T) {
 	scheme := "http"
 	host := "127.0.0.1"
 	leaderPort := 8080
@@ -99,7 +99,7 @@ func TestPeerCountHttp(t *testing.T) {
 	}
 }
 
-func TestSendHttp(t *testing.T) {
+func TestIntegrationSendHttp(t *testing.T) {
 	scheme := "http"
 	host := "127.0.0.1"
 	leaderPort := 8080

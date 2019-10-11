@@ -22,7 +22,7 @@ func (l *mockLoader) Load() error {
 	return nil
 }
 
-func TestStart(t *testing.T) {
+func TestIntegrationStart(t *testing.T) {
 	m := NewHttpManager(
 		&mockLoader{
 			peers: []HttpPeerConfig{

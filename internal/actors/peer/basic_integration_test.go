@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestAddPeer(t *testing.T) {
+func TestIntegrationAddPeer(t *testing.T) {
 	leader := NewBasicPeer(0)
 
 	leader.AddPeer(NewBasicPeer(1))
@@ -21,7 +21,7 @@ func TestAddPeer(t *testing.T) {
 	}
 }
 
-func TestSend(t *testing.T) {
+func TestIntegrationSend(t *testing.T) {
 	leader := NewBasicPeer(0)
 
 	for i := 1; i < 3; i++ {
