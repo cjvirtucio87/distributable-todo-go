@@ -28,22 +28,24 @@ type httpPeer struct {
 }
 
 func (p *httpPeer) AddEntries(e dto.EntryInfo) bool {
-	jsonStr, err := json.Marshal(e)
+	if jsonStr, err := json.Marshal(e); err != nil {
+		log.Fatal(err)
 
-	res, err := http.Post(
+		return false
+	} else if res, err := http.Post(
 		fmt.Sprintf(
 			"%s/log/addEntries",
 			p.Url(),
 		),
 		ContentApplicationJson,
 		bytes.NewBuffer(jsonStr),
-	)
-
-	if err != nil {
+	); err != nil {
 		log.Fatal(err)
-	}
 
-	return res.StatusCode == http.StatusOK
+		return false
+	} else {
+		return res.StatusCode == http.StatusOK
+	}
 }
 
 func (p *httpPeer) Entry(id int) (dto.Entry, error) {
@@ -106,9 +108,7 @@ func (p *httpPeer) Init() error {
 
 			var entryMap map[string]int
 
-			err := json.NewDecoder(req.Body).Decode(&entryMap)
-
-			if err != nil {
+			if err := json.NewDecoder(req.Body).Decode(&entryMap); err != nil {
 				p.respondWithFailure(
 					rw,
 					err.Error(),
@@ -118,9 +118,7 @@ func (p *httpPeer) Init() error {
 
 			entryId := entryMap[entryIdKey]
 
-			var entry dto.Entry
-
-			if entry, err = p.basicPeer.Entry(entryId); err != nil {
+			if entry, err := p.basicPeer.Entry(entryId); err != nil {
 				msg := fmt.Sprintf(
 					"unable to retrieve entry with id %d\n",
 					entryId,
@@ -133,25 +131,23 @@ func (p *httpPeer) Init() error {
 				)
 
 				log.Fatal(msg)
-			}
-
-			rw.Header().Set(
-				HeaderContentType,
-				ContentApplicationJson,
-			)
-
-			rw.WriteHeader(http.StatusOK)
-
-			err = json.NewEncoder(rw).Encode(entry)
-
-			if err != nil {
-				p.respondWithFailure(
-					rw,
-					err.Error(),
-					http.StatusInternalServerError,
+			} else {
+				rw.Header().Set(
+					HeaderContentType,
+					ContentApplicationJson,
 				)
 
-				log.Fatal(err)
+				rw.WriteHeader(http.StatusOK)
+
+				if err := json.NewEncoder(rw).Encode(entry); err != nil {
+					p.respondWithFailure(
+						rw,
+						err.Error(),
+						http.StatusInternalServerError,
+					)
+
+					log.Fatal(err)
+				}
 			}
 		},
 	)
@@ -165,9 +161,7 @@ func (p *httpPeer) Init() error {
 
 			var e dto.EntryInfo
 
-			err := decoder.Decode(&e)
-
-			if err != nil {
+			if err := decoder.Decode(&e); err != nil {
 				p.respondWithFailure(
 					rw,
 					err.Error(),
@@ -213,9 +207,7 @@ func (p *httpPeer) Init() error {
 
 			var m dto.Message
 
-			err := decoder.Decode(&m)
-
-			if err != nil {
+			if err := decoder.Decode(&m); err != nil {
 				p.respondWithFailure(
 					rw,
 					err.Error(),
@@ -269,61 +261,57 @@ func (p *httpPeer) Init() error {
 }
 
 func (p *httpPeer) LogCount() int {
-	res, err := http.Get(
+	if res, err := http.Get(
 		fmt.Sprintf(
 			"%s/log/count",
 			p.Url(),
 		),
-	)
-
-	if err != nil {
+	); err != nil {
 		log.Fatal(err)
+
+		return 0
+	} else {
+		defer res.Body.Close()
+
+		if body, err := ioutil.ReadAll(res.Body); err != nil {
+			log.Fatal(err)
+
+			return 0
+		} else if result, err := strconv.Atoi(string(body)); err != nil {
+			log.Fatal(err)
+
+			return 0
+		} else {
+			return result
+		}
 	}
-
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	result, err := strconv.Atoi(string(body))
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return result
 }
 
 func (p *httpPeer) PeerCount() int {
-	res, err := http.Get(
+	if res, err := http.Get(
 		fmt.Sprintf(
 			"%s/followers/count",
 			p.Url(),
 		),
-	)
-
-	if err != nil {
+	); err != nil {
 		log.Fatal(err)
+
+		return 0
+	} else {
+		defer res.Body.Close()
+
+		if body, err := ioutil.ReadAll(res.Body); err != nil {
+			log.Fatal(err)
+
+			return 0
+		} else if result, err := strconv.Atoi(string(body)); err != nil {
+			log.Fatal(err)
+
+			return 0
+		} else {
+			return result
+		}
 	}
-
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	result, err := strconv.Atoi(string(body))
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return result
 }
 
 func (p *httpPeer) respondWithFailure(rw http.ResponseWriter, msg string, status int) {
@@ -338,30 +326,30 @@ func (p *httpPeer) respondWithFailure(rw http.ResponseWriter, msg string, status
 		"error": msg,
 	}
 
-	err := json.NewEncoder(rw).Encode(errPayload)
-
-	if err != nil {
+	if err := json.NewEncoder(rw).Encode(errPayload); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func (p *httpPeer) Send(m dto.Message) bool {
-	jsonStr, err := json.Marshal(m)
+	if jsonStr, err := json.Marshal(m); err != nil {
+		log.Fatal(err)
 
-	res, err := http.Post(
+		return false
+	} else if res, err := http.Post(
 		fmt.Sprintf(
 			"%s/log/send",
 			p.Url(),
 		),
 		ContentApplicationJson,
 		bytes.NewBuffer(jsonStr),
-	)
-
-	if err != nil {
+	); err != nil {
 		log.Fatal(err)
-	}
 
-	return res.StatusCode == http.StatusOK
+		return false
+	} else {
+		return res.StatusCode == http.StatusOK
+	}
 }
 
 func (p *httpPeer) Url() string {
