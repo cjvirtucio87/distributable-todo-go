@@ -2,18 +2,20 @@ package manager
 
 import (
 	"cjvirtucio87/distributed-todo-go/internal/actors/peer"
-	"cjvirtucio87/distributed-todo-go/internal/rhttp"
 	"context"
 	"log"
 	"time"
 )
 
 type httpManager struct {
-	rhttp.Client
 	peers []actors.Peer
 }
 
 func (m *httpManager) Healthcheck() error {
+	for _, peer := range m.peers {
+		peer.LogCount()
+	}
+
 	return nil
 }
 

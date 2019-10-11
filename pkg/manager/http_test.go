@@ -21,7 +21,7 @@ func (l *mockLoader) Load() error {
 }
 
 func TestStart(t *testing.T) {
-	NewHttpManager(
+	m := NewHttpManager(
 		&mockLoader{
 			peers: []HttpPeerConfig{
 				HttpPeerConfig{
@@ -32,4 +32,15 @@ func TestStart(t *testing.T) {
 			},
 		},
 	)
+
+	defer m.Stop()
+
+	m.Start()
+
+	if err := m.Healthcheck(); err != nil {
+		t.Fatalf(
+			"manager failed to start peers; error: %s\n",
+			err.Error(),
+		)
+	}
 }
