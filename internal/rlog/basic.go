@@ -19,9 +19,9 @@ func (l *BasicLog) Count() int {
 }
 
 func (l *BasicLog) Entry(idx int) (dto.Entry, error) {
-	e := l.backend[idx]
-
-	if &e == nil {
+	if e := l.backend[idx]; &e != nil {
+		return e, nil
+	} else {
 		return e, errors.New(
 			fmt.Sprintf(
 				"could not retrieve entry for index %d",
@@ -29,8 +29,6 @@ func (l *BasicLog) Entry(idx int) (dto.Entry, error) {
 			),
 		)
 	}
-
-	return e, nil
 }
 
 func (l *BasicLog) Entries(start, end int) ([]dto.Entry, bool) {
