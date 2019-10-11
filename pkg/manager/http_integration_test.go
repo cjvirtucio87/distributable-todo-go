@@ -35,8 +35,6 @@ func TestIntegrationStart(t *testing.T) {
 		},
 	)
 
-	defer m.Stop()
-
 	m.Start()
 
 	if err := m.Healthcheck(); err != nil {
