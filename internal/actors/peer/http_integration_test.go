@@ -163,13 +163,13 @@ func TestIntegrationSendHttp(t *testing.T) {
 			Command: "doFoo",
 		},
 	}
-	actualSendResult := leader.Send(
+	if actualSendResult, err := leader.Send(
 		dto.Message{
 			Entries: expectedEntries,
 		},
-	)
-
-	if expectedSendResult != actualSendResult {
+	); err != nil {
+		t.Fatal(err)
+	} else if expectedSendResult != actualSendResult {
 		t.Fatalf("expectedSendResult %t, was %t\n", expectedSendResult, actualSendResult)
 	}
 

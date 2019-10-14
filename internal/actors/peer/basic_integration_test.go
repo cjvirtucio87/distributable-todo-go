@@ -29,15 +29,15 @@ func TestIntegrationSend(t *testing.T) {
 	}
 
 	expectedSendResult := true
-	actualSendResult := leader.Send(
+	if actualSendResult, err := leader.Send(
 		dto.Message{
 			Entries: []dto.Entry{
 				dto.Entry{Command: "doFoo"},
 			},
 		},
-	)
-
-	if expectedSendResult != actualSendResult {
+	); err != nil {
+		t.Fatal(err)
+	} else if expectedSendResult != actualSendResult {
 		t.Fatalf("expectedSendResult %t, was %t", expectedSendResult, actualSendResult)
 	}
 
@@ -65,15 +65,15 @@ func TestIntegrationSend(t *testing.T) {
 	}
 
 	expectedEntry := dto.Entry{Command: "doFoo"}
-	actualSendResult = leader.Send(
+	if actualSendResult, err := leader.Send(
 		dto.Message{
 			Entries: []dto.Entry{
 				expectedEntry,
 			},
 		},
-	)
-
-	if expectedSendResult != actualSendResult {
+	); err != nil {
+		t.Fatal(err)
+	} else if expectedSendResult != actualSendResult {
 		t.Fatalf("expectedSendResult %t, was %t", expectedSendResult, actualSendResult)
 	}
 

@@ -15,11 +15,11 @@ type basicPeer struct {
 	peers        []Peer
 }
 
-func (p *basicPeer) AddEntries(e dto.EntryInfo) bool {
+func (p *basicPeer) AddEntries(e dto.EntryInfo) (bool, error) {
 	latestIndex := p.LogCount() + 1
 
 	if e.NextIndex > latestIndex {
-		return false
+		return false, nil
 	}
 
 	for _, entry := range e.Entries {
@@ -29,7 +29,7 @@ func (p *basicPeer) AddEntries(e dto.EntryInfo) bool {
 
 	p.rlog.AddEntries(e)
 
-	return true
+	return true, nil
 }
 
 func (p *basicPeer) AddPeer(otherPeer Peer) {
@@ -78,7 +78,7 @@ func (p *basicPeer) Id() int {
 	return p.id
 }
 
-func (p *basicPeer) Send(m dto.Message) bool {
+func (p *basicPeer) Send(m dto.Message) (bool, error) {
 	p.rlog.AddEntries(
 		dto.EntryInfo{
 			NextIndex: p.rlog.Count(),
@@ -98,26 +98,26 @@ func (p *basicPeer) Send(m dto.Message) bool {
 		)
 
 		if !ok {
-			return false
+			return false, errors.New("unable to retrieve entries")
 		}
 
-		successfulAppend := otherPeer.AddEntries(
+		if successfulAppend, err := otherPeer.AddEntries(
 			dto.EntryInfo{
 				Entries:   entries,
 				NextIndex: nextIndex,
 			},
-		)
-
-		if !successfulAppend {
+		); err != nil {
+			return false, err
+		} else if !successfulAppend {
 			for nextIndex := p.NextIndexMap[otherPeerId]; nextIndex >= 0; nextIndex-- {
-				successfulAppend = otherPeer.AddEntries(
+				if successfulAppend, err := otherPeer.AddEntries(
 					dto.EntryInfo{
 						Entries:   entries,
 						NextIndex: nextIndex,
 					},
-				)
-
-				if successfulAppend {
+				); err != nil {
+					return false, err
+				} else if successfulAppend {
 					successfulAppendCount++
 					break
 				}
@@ -129,8 +129,16 @@ func (p *basicPeer) Send(m dto.Message) bool {
 		}
 	}
 
-	if successfulAppendCount != p.PeerCount() {
-		return false
+	peerCount := p.PeerCount()
+
+	if successfulAppendCount != peerCount {
+		return false, errors.New(
+			fmt.Sprintf(
+				"only %d out of %d successful append calls",
+				successfulAppendCount,
+				peerCount,
+			),
+		)
 	}
 
 	for _, otherPeer := range p.peers {
@@ -138,7 +146,7 @@ func (p *basicPeer) Send(m dto.Message) bool {
 		p.NextIndexMap[otherPeerId] += len(m.Entries)
 	}
 
-	return true
+	return true, nil
 }
 
 func (p *basicPeer) Shutdown(ctx context.Context) error {

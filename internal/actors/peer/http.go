@@ -3,11 +3,11 @@ package actors
 import (
 	"bytes"
 	"cjvirtucio87/distributed-todo-go/internal/dto"
+	"cjvirtucio87/distributed-todo-go/internal/rlogging"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,17 +21,16 @@ const (
 
 type httpPeer struct {
 	basicPeer
+	logger rlogging.Logger
 	server *http.Server
 	host   string
 	port   int
 	scheme string
 }
 
-func (p *httpPeer) AddEntries(e dto.EntryInfo) bool {
+func (p *httpPeer) AddEntries(e dto.EntryInfo) (bool, error) {
 	if jsonStr, err := json.Marshal(e); err != nil {
-		log.Fatal(err)
-
-		return false
+		return false, err
 	} else if res, err := http.Post(
 		fmt.Sprintf(
 			"%s/log/addEntries",
@@ -40,11 +39,9 @@ func (p *httpPeer) AddEntries(e dto.EntryInfo) bool {
 		ContentApplicationJson,
 		bytes.NewBuffer(jsonStr),
 	); err != nil {
-		log.Fatal(err)
-
-		return false
+		return false, err
 	} else {
-		return res.StatusCode == http.StatusOK
+		return (res.StatusCode == http.StatusOK), nil
 	}
 }
 
@@ -130,7 +127,7 @@ func (p *httpPeer) Init() error {
 					http.StatusBadRequest,
 				)
 
-				log.Fatal(msg)
+				p.logger.Errorf(msg)
 			} else {
 				rw.Header().Set(
 					HeaderContentType,
@@ -140,13 +137,15 @@ func (p *httpPeer) Init() error {
 				rw.WriteHeader(http.StatusOK)
 
 				if err := json.NewEncoder(rw).Encode(entry); err != nil {
+					msg := err.Error()
+
 					p.respondWithFailure(
 						rw,
-						err.Error(),
+						msg,
 						http.StatusInternalServerError,
 					)
 
-					log.Fatal(err)
+					p.logger.Errorf(msg)
 				}
 			}
 		},
@@ -169,9 +168,16 @@ func (p *httpPeer) Init() error {
 				)
 			}
 
-			result := p.basicPeer.AddEntries(e)
-
-			if result {
+			if result, err := p.basicPeer.AddEntries(e); err != nil {
+				p.respondWithFailure(
+					rw,
+					fmt.Sprintf(
+						"error adding entries: %s\n",
+						err,
+					),
+					http.StatusBadRequest,
+				)
+			} else if result {
 				rw.WriteHeader(http.StatusOK)
 			} else {
 				entryStrings := []string{}
@@ -215,9 +221,16 @@ func (p *httpPeer) Init() error {
 				)
 			}
 
-			result := p.basicPeer.Send(m)
-
-			if result {
+			if result, err := p.basicPeer.Send(m); err != nil {
+				p.respondWithFailure(
+					rw,
+					fmt.Sprintf(
+						"error attempting to send message, \n%s",
+						err.Error(),
+					),
+					http.StatusBadRequest,
+				)
+			} else if result {
 				rw.WriteHeader(http.StatusOK)
 			} else {
 				entryStrings := []string{}
@@ -254,7 +267,7 @@ func (p *httpPeer) Init() error {
 	}
 
 	go func() {
-		log.Fatal(p.server.ListenAndServe())
+		p.logger.Errorf(p.server.ListenAndServe().Error())
 	}()
 
 	return nil
@@ -267,18 +280,18 @@ func (p *httpPeer) LogCount() int {
 			p.Url(),
 		),
 	); err != nil {
-		log.Fatal(err)
+		p.logger.Errorf(err.Error())
 
 		return 0
 	} else {
 		defer res.Body.Close()
 
 		if body, err := ioutil.ReadAll(res.Body); err != nil {
-			log.Fatal(err)
+			p.logger.Errorf(err.Error())
 
 			return 0
 		} else if result, err := strconv.Atoi(string(body)); err != nil {
-			log.Fatal(err)
+			p.logger.Errorf(err.Error())
 
 			return 0
 		} else {
@@ -294,18 +307,18 @@ func (p *httpPeer) PeerCount() int {
 			p.Url(),
 		),
 	); err != nil {
-		log.Fatal(err)
+		p.logger.Errorf(err.Error())
 
 		return 0
 	} else {
 		defer res.Body.Close()
 
 		if body, err := ioutil.ReadAll(res.Body); err != nil {
-			log.Fatal(err)
+			p.logger.Errorf(err.Error())
 
 			return 0
 		} else if result, err := strconv.Atoi(string(body)); err != nil {
-			log.Fatal(err)
+			p.logger.Errorf(err.Error())
 
 			return 0
 		} else {
@@ -327,15 +340,13 @@ func (p *httpPeer) respondWithFailure(rw http.ResponseWriter, msg string, status
 	}
 
 	if err := json.NewEncoder(rw).Encode(errPayload); err != nil {
-		log.Fatal(err)
+		p.logger.Errorf(err.Error())
 	}
 }
 
-func (p *httpPeer) Send(m dto.Message) bool {
+func (p *httpPeer) Send(m dto.Message) (bool, error) {
 	if jsonStr, err := json.Marshal(m); err != nil {
-		log.Fatal(err)
-
-		return false
+		return false, err
 	} else if res, err := http.Post(
 		fmt.Sprintf(
 			"%s/log/send",
@@ -344,11 +355,9 @@ func (p *httpPeer) Send(m dto.Message) bool {
 		ContentApplicationJson,
 		bytes.NewBuffer(jsonStr),
 	); err != nil {
-		log.Fatal(err)
-
-		return false
+		return false, err
 	} else {
-		return res.StatusCode == http.StatusOK
+		return (res.StatusCode == http.StatusOK), nil
 	}
 }
 

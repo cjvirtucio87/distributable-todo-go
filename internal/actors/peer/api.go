@@ -3,11 +3,12 @@ package actors
 import (
 	"cjvirtucio87/distributed-todo-go/internal/dto"
 	"cjvirtucio87/distributed-todo-go/internal/rlog"
+	"cjvirtucio87/distributed-todo-go/internal/rlogging"
 	"context"
 )
 
 type Peer interface {
-	AddEntries(e dto.EntryInfo) bool
+	AddEntries(e dto.EntryInfo) (bool, error)
 	AddPeer(peer Peer)
 	Entry(idx int) (dto.Entry, error)
 	Followers() []Peer
@@ -15,7 +16,7 @@ type Peer interface {
 	PeerCount() int
 	LogCount() int
 	Id() int
-	Send(m dto.Message) bool
+	Send(m dto.Message) (bool, error)
 	Shutdown(ctx context.Context) error
 }
 
@@ -36,6 +37,7 @@ func NewHttpPeer(scheme, host string, port, id int) Peer {
 			NextIndexMap: map[int]int{},
 			peers:        []Peer{},
 		},
+		logger: rlogging.NewZapLogger(),
 		scheme: scheme,
 		host:   host,
 		port:   port,
