@@ -23,7 +23,7 @@ func (l *mockLoader) Load() error {
 }
 
 func TestIntegrationStart(t *testing.T) {
-	m := NewHttpManager(
+	if m, err := NewHttpManager(
 		&mockLoader{
 			peers: []HttpPeerConfig{
 				HttpPeerConfig{
@@ -33,14 +33,16 @@ func TestIntegrationStart(t *testing.T) {
 				},
 			},
 		},
-	)
+	); err != nil {
+		t.Fatal(err)
+	} else {
+		m.Start()
 
-	m.Start()
-
-	if err := m.Healthcheck(); err != nil {
-		t.Fatalf(
-			"manager failed to start peers; error: %s\n",
-			err.Error(),
-		)
+		if err := m.Healthcheck(); err != nil {
+			t.Fatalf(
+				"manager failed to start peers; error: %s\n",
+				err.Error(),
+			)
+		}
 	}
 }

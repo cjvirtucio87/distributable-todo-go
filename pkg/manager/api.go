@@ -2,8 +2,8 @@ package manager
 
 import (
 	"cjvirtucio87/distributed-todo-go/internal/actors/peer"
+	"cjvirtucio87/distributed-todo-go/internal/rlogging"
 	"cjvirtucio87/distributed-todo-go/pkg/config"
-	"log"
 )
 
 type HttpPeerConfig struct {
@@ -13,7 +13,8 @@ type HttpPeerConfig struct {
 }
 
 type HttpManagerConfig struct {
-	Peers []HttpPeerConfig
+	logger rlogging.Logger
+	Peers  []HttpPeerConfig
 }
 
 type Manager interface {
@@ -22,15 +23,15 @@ type Manager interface {
 	Stop()
 }
 
-func NewHttpManager(loader config.Loader) Manager {
+func NewHttpManager(loader config.Loader) (Manager, error) {
 	if err := loader.Load(); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	var c HttpManagerConfig
 
 	if err := loader.Unmarshal(&c); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	peers := []actors.Peer{}
@@ -58,5 +59,5 @@ func NewHttpManager(loader config.Loader) Manager {
 
 	return &httpManager{
 		peers: peers,
-	}
+	}, nil
 }

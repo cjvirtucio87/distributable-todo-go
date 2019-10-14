@@ -9,25 +9,27 @@ import (
 )
 
 func main() {
-	m := manager.NewHttpManager(
+	if m, err := manager.NewHttpManager(
 		config.NewViperLoader(
 			"app",
 			"yaml",
 		),
-	)
+	); err != nil {
+		panic(err.Error())
+	} else {
+		sig := make(chan os.Signal, 1)
 
-	sig := make(chan os.Signal, 1)
+		signal.Notify(
+			sig,
+			syscall.SIGHUP,
+			syscall.SIGINT,
+			syscall.SIGTERM,
+			syscall.SIGQUIT,
+		)
 
-	signal.Notify(
-		sig,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT,
-	)
+		m.Start()
 
-	m.Start()
-
-	<-sig
-	m.Stop()
+		<-sig
+		m.Stop()
+	}
 }
