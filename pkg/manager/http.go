@@ -2,13 +2,14 @@ package manager
 
 import (
 	"cjvirtucio87/distributed-todo-go/internal/actors/peer"
+	"cjvirtucio87/distributed-todo-go/internal/rlogging"
 	"context"
-	"log"
 	"time"
 )
 
 type httpManager struct {
-	peers []actors.Peer
+	logger rlogging.Logger
+	peers  []actors.Peer
 }
 
 func (m *httpManager) Healthcheck() error {
@@ -20,18 +21,16 @@ func (m *httpManager) Healthcheck() error {
 }
 
 func (m *httpManager) Start() {
-	log.Printf("Starting peers.\n")
+	m.logger.Infof("Starting peers.\n")
 	for _, peer := range m.peers {
-		err := peer.Init()
-
-		if err != nil {
-			log.Fatal(err)
+		if err := peer.Init(); err != nil {
+			m.logger.Errorf(err.Error())
 		}
 	}
 }
 
 func (m *httpManager) Stop() {
-	log.Printf("Stopping peers.\n")
+	m.logger.Infof("Stopping peers.\n")
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
 		5*time.Second,
@@ -41,7 +40,7 @@ func (m *httpManager) Stop() {
 
 	for _, peer := range m.peers {
 		if err := peer.Shutdown(ctx); err != nil {
-			log.Fatal(err)
+			m.logger.Errorf(err.Error())
 		}
 	}
 }

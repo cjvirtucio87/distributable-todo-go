@@ -58,6 +58,7 @@ func NewHttpManager(loader config.Loader) (Manager, error) {
 	}
 
 	return &httpManager{
-		peers: peers,
+		logger: rlogging.NewZapLogger(),
+		peers:  peers,
 	}, nil
 }
