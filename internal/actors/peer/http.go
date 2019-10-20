@@ -3,7 +3,6 @@ package actors
 import (
 	"bytes"
 	"cjvirtucio87/distributed-todo-go/internal/dto"
-	"cjvirtucio87/distributed-todo-go/internal/rlogging"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -21,7 +20,6 @@ const (
 
 type httpPeer struct {
 	basicPeer
-	logger rlogging.Logger
 	server *http.Server
 	host   string
 	port   int
@@ -79,22 +77,38 @@ func (p *httpPeer) Init() error {
 	sm.HandleFunc(
 		"/followers/count",
 		func(rw http.ResponseWriter, req *http.Request) {
-			fmt.Fprintf(
-				rw,
-				"%d",
-				p.basicPeer.PeerCount(),
-			)
+			if result, err := p.basicPeer.PeerCount(); err != nil {
+				p.respondWithFailure(
+					rw,
+					err.Error(),
+					http.StatusBadRequest,
+				)
+			} else {
+				fmt.Fprintf(
+					rw,
+					"%d",
+					result,
+				)
+			}
 		},
 	)
 
 	sm.HandleFunc(
 		"/log/count",
 		func(rw http.ResponseWriter, req *http.Request) {
-			fmt.Fprintf(
-				rw,
-				"%d",
-				p.basicPeer.LogCount(),
-			)
+			if result, err := p.basicPeer.LogCount(); err != nil {
+				p.respondWithFailure(
+					rw,
+					err.Error(),
+					http.StatusBadRequest,
+				)
+			} else {
+				fmt.Fprintf(
+					rw,
+					"%d",
+					result,
+				)
+			}
 		},
 	)
 
@@ -127,7 +141,7 @@ func (p *httpPeer) Init() error {
 					http.StatusBadRequest,
 				)
 
-				p.logger.Errorf(msg)
+				p.basicPeer.rlogger.Errorf(msg)
 			} else {
 				rw.Header().Set(
 					HeaderContentType,
@@ -145,7 +159,7 @@ func (p *httpPeer) Init() error {
 						http.StatusInternalServerError,
 					)
 
-					p.logger.Errorf(msg)
+					p.basicPeer.rlogger.Errorf(msg)
 				}
 			}
 		},
@@ -267,62 +281,50 @@ func (p *httpPeer) Init() error {
 	}
 
 	go func() {
-		p.logger.Errorf(p.server.ListenAndServe().Error())
+		p.basicPeer.rlogger.Errorf(p.server.ListenAndServe().Error())
 	}()
 
 	return nil
 }
 
-func (p *httpPeer) LogCount() int {
+func (p *httpPeer) LogCount() (int, error) {
 	if res, err := http.Get(
 		fmt.Sprintf(
 			"%s/log/count",
 			p.Url(),
 		),
 	); err != nil {
-		p.logger.Errorf(err.Error())
-
-		return 0
+		return 0, err
 	} else {
 		defer res.Body.Close()
 
 		if body, err := ioutil.ReadAll(res.Body); err != nil {
-			p.logger.Errorf(err.Error())
-
-			return 0
+			return 0, err
 		} else if result, err := strconv.Atoi(string(body)); err != nil {
-			p.logger.Errorf(err.Error())
-
-			return 0
+			return 0, err
 		} else {
-			return result
+			return result, nil
 		}
 	}
 }
 
-func (p *httpPeer) PeerCount() int {
+func (p *httpPeer) PeerCount() (int, error) {
 	if res, err := http.Get(
 		fmt.Sprintf(
 			"%s/followers/count",
 			p.Url(),
 		),
 	); err != nil {
-		p.logger.Errorf(err.Error())
-
-		return 0
+		return 0, err
 	} else {
 		defer res.Body.Close()
 
 		if body, err := ioutil.ReadAll(res.Body); err != nil {
-			p.logger.Errorf(err.Error())
-
-			return 0
+			return 0, err
 		} else if result, err := strconv.Atoi(string(body)); err != nil {
-			p.logger.Errorf(err.Error())
-
-			return 0
+			return 0, err
 		} else {
-			return result
+			return result, nil
 		}
 	}
 }
@@ -340,7 +342,7 @@ func (p *httpPeer) respondWithFailure(rw http.ResponseWriter, msg string, status
 	}
 
 	if err := json.NewEncoder(rw).Encode(errPayload); err != nil {
-		p.logger.Errorf(err.Error())
+		p.basicPeer.rlogger.Errorf(err.Error())
 	}
 }
 

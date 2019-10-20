@@ -34,6 +34,8 @@ func NewHttpManager(loader config.Loader) (Manager, error) {
 		return nil, err
 	}
 
+	rlogger := rlogging.NewZapLogger()
+
 	peers := []actors.Peer{}
 	id := 0
 
@@ -45,6 +47,7 @@ func NewHttpManager(loader config.Loader) (Manager, error) {
 				httpPeerConfig.Host,
 				httpPeerConfig.Port,
 				id,
+				actors.WithLogger(rlogger),
 			),
 		)
 
@@ -58,7 +61,7 @@ func NewHttpManager(loader config.Loader) (Manager, error) {
 	}
 
 	return &httpManager{
-		logger: rlogging.NewZapLogger(),
+		logger: rlogger,
 		peers:  peers,
 	}, nil
 }

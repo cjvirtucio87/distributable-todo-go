@@ -14,7 +14,9 @@ type httpManager struct {
 
 func (m *httpManager) Healthcheck() error {
 	for _, peer := range m.peers {
-		peer.LogCount()
+		if _, err := peer.LogCount(); err != nil {
+			return err
+		}
 	}
 
 	return nil

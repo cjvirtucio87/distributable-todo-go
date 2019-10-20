@@ -3,6 +3,7 @@ package actors
 import (
 	"cjvirtucio87/distributed-todo-go/internal/dto"
 	"cjvirtucio87/distributed-todo-go/internal/rlog"
+	"cjvirtucio87/distributed-todo-go/internal/rlogging"
 	"context"
 	"errors"
 	"fmt"
@@ -11,25 +12,26 @@ import (
 type basicPeer struct {
 	id           int
 	rlog         rlog.Log
+	rlogger      rlogging.Logger
 	NextIndexMap map[int]int
 	peers        []Peer
 }
 
 func (p *basicPeer) AddEntries(e dto.EntryInfo) (bool, error) {
-	latestIndex := p.LogCount() + 1
-
-	if e.NextIndex > latestIndex {
+	if latestIndex, err := p.LogCount(); err != nil {
+		return false, err
+	} else if e.NextIndex > latestIndex+1 {
 		return false, nil
+	} else {
+		for _, entry := range e.Entries {
+			entry.Id = latestIndex + 1
+			latestIndex++
+		}
+
+		p.rlog.AddEntries(e)
+
+		return true, nil
 	}
-
-	for _, entry := range e.Entries {
-		entry.Id = latestIndex
-		latestIndex++
-	}
-
-	p.rlog.AddEntries(e)
-
-	return true, nil
 }
 
 func (p *basicPeer) AddPeer(otherPeer Peer) {
@@ -38,20 +40,18 @@ func (p *basicPeer) AddPeer(otherPeer Peer) {
 
 func (p *basicPeer) Entry(idx int) (dto.Entry, error) {
 	var e dto.Entry
-	var err error
-
-	if p.LogCount() <= idx {
-		err = errors.New(
+	if result, err := p.LogCount(); err != nil {
+		return e, err
+	} else if result <= idx {
+		return e, errors.New(
 			fmt.Sprintf(
 				"idx %d exceeds log boundary",
 				idx,
 			),
 		)
 	} else {
-		e, err = p.rlog.Entry(idx)
+		return p.rlog.Entry(idx)
 	}
-
-	return e, err
 }
 
 func (p *basicPeer) Followers() []Peer {
@@ -60,18 +60,22 @@ func (p *basicPeer) Followers() []Peer {
 
 func (p *basicPeer) Init() error {
 	for _, otherPeer := range p.peers {
-		p.NextIndexMap[otherPeer.Id()] = p.LogCount()
+		if result, err := p.LogCount(); err != nil {
+			return err
+		} else {
+			p.NextIndexMap[otherPeer.Id()] = result
+		}
 	}
 
 	return nil
 }
 
-func (p *basicPeer) LogCount() int {
-	return p.rlog.Count()
+func (p *basicPeer) LogCount() (int, error) {
+	return p.rlog.Count(), nil
 }
 
-func (p *basicPeer) PeerCount() int {
-	return len(p.peers)
+func (p *basicPeer) PeerCount() (int, error) {
+	return len(p.peers), nil
 }
 
 func (p *basicPeer) Id() int {
@@ -129,9 +133,9 @@ func (p *basicPeer) Send(m dto.Message) (bool, error) {
 		}
 	}
 
-	peerCount := p.PeerCount()
-
-	if successfulAppendCount != peerCount {
+	if peerCount, err := p.PeerCount(); err != nil {
+		return false, err
+	} else if successfulAppendCount != peerCount {
 		return false, errors.New(
 			fmt.Sprintf(
 				"only %d out of %d successful append calls",
@@ -139,14 +143,26 @@ func (p *basicPeer) Send(m dto.Message) (bool, error) {
 				peerCount,
 			),
 		)
-	}
+	} else {
+		for _, otherPeer := range p.peers {
+			otherPeerId := otherPeer.Id()
+			p.NextIndexMap[otherPeerId] += len(m.Entries)
+		}
 
-	for _, otherPeer := range p.peers {
-		otherPeerId := otherPeer.Id()
-		p.NextIndexMap[otherPeerId] += len(m.Entries)
+		return true, nil
 	}
+}
 
-	return true, nil
+func (p *basicPeer) setLog(log rlog.Log) error {
+	p.rlog = log
+
+	return nil
+}
+
+func (p *basicPeer) setLogger(rlogger rlogging.Logger) error {
+	p.rlogger = rlogger
+
+	return nil
 }
 
 func (p *basicPeer) Shutdown(ctx context.Context) error {

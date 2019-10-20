@@ -12,11 +12,13 @@ type Peer interface {
 	AddPeer(peer Peer)
 	Entry(idx int) (dto.Entry, error)
 	Followers() []Peer
-	Init() error
-	PeerCount() int
-	LogCount() int
 	Id() int
+	Init() error
+	PeerCount() (int, error)
+	LogCount() (int, error)
 	Send(m dto.Message) (bool, error)
+	setLog(log rlog.Log) error
+	setLogger(rlogger rlogging.Logger) error
 	Shutdown(ctx context.Context) error
 }
 
@@ -29,7 +31,7 @@ func NewBasicPeer(id int) Peer {
 	}
 }
 
-func NewHttpPeer(scheme, host string, port, id int) Peer {
+func NewHttpPeer(scheme, host string, port, id int, options ...func(p Peer)) Peer {
 	p := &httpPeer{
 		basicPeer: basicPeer{
 			id:           id,
@@ -37,11 +39,26 @@ func NewHttpPeer(scheme, host string, port, id int) Peer {
 			NextIndexMap: map[int]int{},
 			peers:        []Peer{},
 		},
-		logger: rlogging.NewZapLogger(),
 		scheme: scheme,
 		host:   host,
 		port:   port,
 	}
 
+	for _, o := range options {
+		o(p)
+	}
+
 	return p
+}
+
+func WithLog(log rlog.Log) func(p Peer) {
+	return func(p Peer) {
+		p.setLog(log)
+	}
+}
+
+func WithLogger(rlogger rlogging.Logger) func(p Peer) {
+	return func(p Peer) {
+		p.setLogger(rlogger)
+	}
 }

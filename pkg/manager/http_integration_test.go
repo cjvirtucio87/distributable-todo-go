@@ -27,8 +27,8 @@ func TestIntegrationStart(t *testing.T) {
 		&mockLoader{
 			peers: []HttpPeerConfig{
 				HttpPeerConfig{
-					Host:   "localhost",
-					Port:   8080,
+					Host:   "127.0.0.1",
+					Port:   8085,
 					Scheme: "http",
 				},
 			},

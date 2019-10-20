@@ -5,6 +5,7 @@ package actors
 import (
 	"cjvirtucio87/distributed-todo-go/internal/dto"
 	"cjvirtucio87/distributed-todo-go/internal/rlog"
+	"cjvirtucio87/distributed-todo-go/internal/rlogging"
 	"testing"
 )
 
@@ -13,11 +14,14 @@ func TestIntegrationLogCountHttp(t *testing.T) {
 	host := "127.0.0.1"
 	leaderPort := 8080
 
+	rlogger := rlogging.NewZapLogger()
+
 	leader := NewHttpPeer(
 		scheme,
 		host,
 		leaderPort,
 		0,
+		WithLogger(rlogger),
 	)
 
 	followers := []Peer{}
@@ -30,6 +34,7 @@ func TestIntegrationLogCountHttp(t *testing.T) {
 				host,
 				leaderPort+i,
 				i,
+				WithLogger(rlogger),
 			),
 		)
 	}
@@ -49,9 +54,9 @@ func TestIntegrationLogCountHttp(t *testing.T) {
 	expectedLogCount := 0
 
 	for _, follower := range followers {
-		actualLogCount := follower.LogCount()
-
-		if expectedLogCount != actualLogCount {
+		if actualLogCount, err := follower.LogCount(); err != nil {
+			t.Fatalf("failed to retrieve log count due to error, %s\n", err.Error())
+		} else if expectedLogCount != actualLogCount {
 			t.Fatalf("expected %d, was %d", expectedLogCount, actualLogCount)
 		}
 	}
@@ -62,11 +67,14 @@ func TestIntegrationPeerCountHttp(t *testing.T) {
 	host := "127.0.0.1"
 	leaderPort := 8080
 
+	rlogger := rlogging.NewZapLogger()
+
 	leader := NewHttpPeer(
 		scheme,
 		host,
 		leaderPort,
 		0,
+		WithLogger(rlogger),
 	)
 
 	followers := []Peer{}
@@ -79,6 +87,7 @@ func TestIntegrationPeerCountHttp(t *testing.T) {
 				host,
 				leaderPort+i,
 				i,
+				WithLogger(rlogger),
 			),
 		)
 	}
@@ -92,9 +101,9 @@ func TestIntegrationPeerCountHttp(t *testing.T) {
 	}
 
 	expectedCount := len(followers)
-	actualCount := leader.PeerCount()
-
-	if expectedCount != actualCount {
+	if actualCount, err := leader.PeerCount(); err != nil {
+		t.Fatalf("failed to retrieve peer count due to error, %s\n", err.Error())
+	} else if expectedCount != actualCount {
 		t.Fatalf("expected %d, was %d", expectedCount, actualCount)
 	}
 }
@@ -116,13 +125,13 @@ func TestIntegrationSendHttp(t *testing.T) {
 	for i := 1; i < 3; i++ {
 		followers = append(
 			followers,
-			&httpPeer{
-				scheme: scheme,
-				host:   host,
-				port:   leaderPort + i,
-				basicPeer: basicPeer{
-					id: i,
-					rlog: rlog.NewBasicLog(
+			NewHttpPeer(
+				scheme,
+				host,
+				leaderPort+i,
+				i,
+				WithLog(
+					rlog.NewBasicLog(
 						rlog.WithBackend(
 							[]dto.Entry{
 								dto.Entry{
@@ -134,10 +143,8 @@ func TestIntegrationSendHttp(t *testing.T) {
 							},
 						),
 					),
-					NextIndexMap: map[int]int{},
-					peers:        []Peer{},
-				},
-			},
+				),
+			),
 		)
 	}
 
@@ -176,26 +183,26 @@ func TestIntegrationSendHttp(t *testing.T) {
 	expectedPeerLogCount := len(expectedEntries)
 
 	for _, p := range leader.Followers() {
-		actualPeerLogCount := p.LogCount()
-
-		if expectedPeerLogCount != actualPeerLogCount {
+		if actualPeerLogCount, err := p.LogCount(); err != nil {
+			t.Fatalf("failed to retrieve log count due to error, %s\n", err.Error())
+		} else if expectedPeerLogCount != actualPeerLogCount {
 			t.Fatalf("expectedPeerLogCount %d, was %d\n", expectedPeerLogCount, actualPeerLogCount)
-		}
+		} else {
+			id := expectedPeerLogCount - 1
 
-		id := expectedPeerLogCount - 1
+			expectedLatestEntry := expectedEntries[id]
 
-		expectedLatestEntry := expectedEntries[id]
-
-		if actualPeerEntry, err := p.Entry(id); err != nil {
-			t.Fatalf(
-				"unable to retrieve entry with id %d, due to error, %s\n",
-				id,
-				err.Error(),
-			)
-		} else if expectedLatestEntry != actualPeerEntry {
-			t.Fatalf("expectedLatestEntry %v, was %v", expectedLatestEntry.Command, actualPeerEntry.Command)
-		} else if expectedLatestEntry.Id != actualPeerEntry.Id {
-			t.Fatalf("expectedLatestEntry %v, was %v", expectedLatestEntry.Id, actualPeerEntry.Id)
+			if actualPeerEntry, err := p.Entry(id); err != nil {
+				t.Fatalf(
+					"unable to retrieve entry with id %d, due to error, %s\n",
+					id,
+					err.Error(),
+				)
+			} else if expectedLatestEntry != actualPeerEntry {
+				t.Fatalf("expectedLatestEntry %v, was %v", expectedLatestEntry.Command, actualPeerEntry.Command)
+			} else if expectedLatestEntry.Id != actualPeerEntry.Id {
+				t.Fatalf("expectedLatestEntry %v, was %v", expectedLatestEntry.Id, actualPeerEntry.Id)
+			}
 		}
 	}
 }
