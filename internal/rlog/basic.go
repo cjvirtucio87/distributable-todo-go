@@ -10,8 +10,10 @@ type BasicLog struct {
 	backend []dto.Entry
 }
 
-func (l *BasicLog) AddEntries(e dto.EntryInfo) {
+func (l *BasicLog) AddEntries(e dto.EntryInfo) error {
 	l.backend = append(l.backend[:e.NextIndex], e.Entries...)
+
+	return nil
 }
 
 func (l *BasicLog) Count() int {

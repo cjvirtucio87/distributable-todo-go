@@ -3,7 +3,7 @@ package rlog
 import "cjvirtucio87/distributed-todo-go/internal/dto"
 
 type Log interface {
-	AddEntries(entryInfo dto.EntryInfo)
+	AddEntries(entryInfo dto.EntryInfo) error
 	Count() int
 	Entry(idx int) (dto.Entry, error)
 	Entries(start, end int) ([]dto.Entry, bool)

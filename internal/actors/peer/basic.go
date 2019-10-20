@@ -28,9 +28,11 @@ func (p *basicPeer) AddEntries(e dto.EntryInfo) (bool, error) {
 			latestIndex++
 		}
 
-		p.rlog.AddEntries(e)
-
-		return true, nil
+		if err := p.rlog.AddEntries(e); err != nil {
+			return false, err
+		} else {
+			return true, nil
+		}
 	}
 }
 
@@ -83,73 +85,75 @@ func (p *basicPeer) Id() int {
 }
 
 func (p *basicPeer) Send(m dto.Message) (bool, error) {
-	p.rlog.AddEntries(
+	if err := p.rlog.AddEntries(
 		dto.EntryInfo{
 			NextIndex: p.rlog.Count(),
 			Entries:   m.Entries,
 		},
-	)
-
-	var successfulAppendCount int
-
-	for _, otherPeer := range p.peers {
-		otherPeerId := otherPeer.Id()
-		nextIndex := p.NextIndexMap[otherPeerId]
-
-		entries, ok := p.rlog.Entries(
-			nextIndex,
-			p.rlog.Count(),
-		)
-
-		if !ok {
-			return false, errors.New("unable to retrieve entries")
-		}
-
-		if successfulAppend, err := otherPeer.AddEntries(
-			dto.EntryInfo{
-				Entries:   entries,
-				NextIndex: nextIndex,
-			},
-		); err != nil {
-			return false, err
-		} else if !successfulAppend {
-			for nextIndex := p.NextIndexMap[otherPeerId]; nextIndex >= 0; nextIndex-- {
-				if successfulAppend, err := otherPeer.AddEntries(
-					dto.EntryInfo{
-						Entries:   entries,
-						NextIndex: nextIndex,
-					},
-				); err != nil {
-					return false, err
-				} else if successfulAppend {
-					successfulAppendCount++
-					break
-				}
-
-				p.NextIndexMap[otherPeerId] = nextIndex - 1
-			}
-		} else {
-			successfulAppendCount++
-		}
-	}
-
-	if peerCount, err := p.PeerCount(); err != nil {
+	); err != nil {
 		return false, err
-	} else if successfulAppendCount != peerCount {
-		return false, errors.New(
-			fmt.Sprintf(
-				"only %d out of %d successful append calls",
-				successfulAppendCount,
-				peerCount,
-			),
-		)
 	} else {
+		var successfulAppendCount int
+
 		for _, otherPeer := range p.peers {
 			otherPeerId := otherPeer.Id()
-			p.NextIndexMap[otherPeerId] += len(m.Entries)
+			nextIndex := p.NextIndexMap[otherPeerId]
+
+			entries, ok := p.rlog.Entries(
+				nextIndex,
+				p.rlog.Count(),
+			)
+
+			if !ok {
+				return false, errors.New("unable to retrieve entries")
+			}
+
+			if successfulAppend, err := otherPeer.AddEntries(
+				dto.EntryInfo{
+					Entries:   entries,
+					NextIndex: nextIndex,
+				},
+			); err != nil {
+				return false, err
+			} else if !successfulAppend {
+				for nextIndex := p.NextIndexMap[otherPeerId]; nextIndex >= 0; nextIndex-- {
+					if successfulAppend, err := otherPeer.AddEntries(
+						dto.EntryInfo{
+							Entries:   entries,
+							NextIndex: nextIndex,
+						},
+					); err != nil {
+						return false, err
+					} else if successfulAppend {
+						successfulAppendCount++
+						break
+					}
+
+					p.NextIndexMap[otherPeerId] = nextIndex - 1
+				}
+			} else {
+				successfulAppendCount++
+			}
 		}
 
-		return true, nil
+		if peerCount, err := p.PeerCount(); err != nil {
+			return false, err
+		} else if successfulAppendCount != peerCount {
+			return false, errors.New(
+				fmt.Sprintf(
+					"only %d out of %d successful append calls",
+					successfulAppendCount,
+					peerCount,
+				),
+			)
+		} else {
+			for _, otherPeer := range p.peers {
+				otherPeerId := otherPeer.Id()
+				p.NextIndexMap[otherPeerId] += len(m.Entries)
+			}
+
+			return true, nil
+		}
 	}
 }
 
