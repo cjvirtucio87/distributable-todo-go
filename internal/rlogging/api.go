@@ -1,6 +1,9 @@
 package rlogging
 
-import "go.uber.org/zap"
+import (
+	"go.uber.org/zap"
+	"io"
+)
 
 type Logger interface {
 	Infof(tmpl string, args ...interface{})
@@ -15,5 +18,11 @@ func NewZapLogger() Logger {
 
 	return &ZapLogger{
 		SugaredLogger: logger.Sugar(),
+	}
+}
+
+func NewWriterLogger(logger Logger) io.Writer {
+	return &WriterLogger{
+		Logger: logger,
 	}
 }

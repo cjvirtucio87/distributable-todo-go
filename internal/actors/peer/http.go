@@ -3,10 +3,12 @@ package actors
 import (
 	"bytes"
 	"cjvirtucio87/distributed-todo-go/internal/dto"
+	"cjvirtucio87/distributed-todo-go/internal/rlogging"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -276,6 +278,11 @@ func (p *httpPeer) Init() error {
 			"%s:%d",
 			p.host,
 			p.port,
+		),
+		ErrorLog: log.New(
+			rlogging.NewWriterLogger(p.basicPeer.rlogger),
+			"",
+			0,
 		),
 		Handler: sm,
 	}
