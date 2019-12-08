@@ -11,7 +11,7 @@ import (
 
 func TestIntegrationLogCountHttp(t *testing.T) {
 	scheme := "http"
-	host := "localhost"
+	host := "127.0.0.1"
 	leaderPort := 8080
 
 	rlogger := rlogging.NewZapLogger()
@@ -64,8 +64,8 @@ func TestIntegrationLogCountHttp(t *testing.T) {
 
 func TestIntegrationPeerCountHttp(t *testing.T) {
 	scheme := "http"
-	host := "localhost"
-	leaderPort := 8090
+	host := "127.0.0.1"
+	leaderPort := 8080
 
 	rlogger := rlogging.NewZapLogger()
 
@@ -110,8 +110,8 @@ func TestIntegrationPeerCountHttp(t *testing.T) {
 
 func TestIntegrationSendHttp(t *testing.T) {
 	scheme := "http"
-	host := "localhost"
-	leaderPort := 8100
+	host := "127.0.0.1"
+	leaderPort := 8080
 
 	leader := NewHttpPeer(
 		scheme,

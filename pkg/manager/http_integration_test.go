@@ -28,7 +28,7 @@ func TestIntegrationStart(t *testing.T) {
 			peers: []HttpPeerConfig{
 				HttpPeerConfig{
 					Host:   "127.0.0.1",
-					Port:   8110,
+					Port:   8085,
 					Scheme: "http",
 				},
 			},
