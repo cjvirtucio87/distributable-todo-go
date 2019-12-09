@@ -287,11 +287,7 @@ func (p *httpPeer) Init() error {
 		Handler: sm,
 	}
 
-	go func() {
-		p.basicPeer.rlogger.Errorf(p.server.ListenAndServe().Error())
-	}()
-
-	return nil
+	return p.server.ListenAndServe()
 }
 
 func (p *httpPeer) LogCount() (int, error) {
