@@ -44,13 +44,13 @@ func TestIntegrationLogCountHttp(t *testing.T) {
 	for _, follower := range followers {
 		followerChannel := make(chan error)
 
-		channels = append(channels, followerChannel)
-
-		go func() {
+		go func(followerChannel chan error, follower Peer) {
 			followerChannel <- follower.Init()
-		}()
+		}(followerChannel, follower)
 
 		leader.AddPeer(follower)
+
+		channels = append(channels, followerChannel)
 	}
 
 	leaderChannel := make(chan error)
@@ -62,12 +62,24 @@ func TestIntegrationLogCountHttp(t *testing.T) {
 	timeoutChannel := make(chan error)
 
 	go func() {
-		time.Sleep(10 * time.Second)
+		t.Log("waiting..")
+
+		for i := 0; i < 20; i++ {
+			t.Logf("%d", i+1)
+
+			time.Sleep(1 * time.Second)
+		}
+
+		t.Log("done waiting. no errors")
 
 		timeoutChannel <- nil
 	}()
 
-	channels = append(channels, leaderChannel, timeoutChannel)
+	channels = append(
+		channels,
+		leaderChannel,
+		timeoutChannel,
+	)
 
 	// inspired by: https://stackoverflow.com/a/19992525/5665947
 	selectCases := make([]reflect.SelectCase, len(channels))
