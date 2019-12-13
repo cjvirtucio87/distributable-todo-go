@@ -3,6 +3,7 @@
 package actors
 
 import (
+	"cjvirtucio87/distributed-todo-go/internal/dto"
 	"cjvirtucio87/distributed-todo-go/internal/rlogging"
 	"reflect"
 	"testing"
@@ -130,5 +131,57 @@ func TestIntegrationPeerCountHttp(t *testing.T) {
 		t.Fatalf("failed to retrieve peer count due to error, %s\n", err.Error())
 	} else if expectedCount != actualCount {
 		t.Fatalf("expected %d, was %d", expectedCount, actualCount)
+	}
+}
+
+func TestIntegrationSendHttp(t *testing.T) {
+	factory := newFactory(t)
+
+	expectedSendResult := true
+	expectedEntries := []dto.Entry{
+		dto.Entry{
+			Command: "doHip",
+		},
+		dto.Entry{
+			Command: "doBar",
+		},
+		dto.Entry{
+			Command: "doFoo",
+		},
+	}
+	if actualSendResult, err := factory.leader.Send(
+		dto.Message{
+			Entries: expectedEntries,
+		},
+	); err != nil {
+		t.Fatal(err)
+	} else if expectedSendResult != actualSendResult {
+		t.Fatalf("expectedSendResult %t, was %t\n", expectedSendResult, actualSendResult)
+	}
+
+	expectedPeerLogCount := len(expectedEntries)
+
+	for _, p := range factory.leader.Followers() {
+		if actualPeerLogCount, err := p.LogCount(); err != nil {
+			t.Fatalf("failed to retrieve log count due to error, %s\n", err.Error())
+		} else if expectedPeerLogCount != actualPeerLogCount {
+			t.Fatalf("expectedPeerLogCount %d, was %d\n", expectedPeerLogCount, actualPeerLogCount)
+		} else {
+			id := expectedPeerLogCount - 1
+
+			expectedLatestEntry := expectedEntries[id]
+
+			if actualPeerEntry, err := p.Entry(id); err != nil {
+				t.Fatalf(
+					"unable to retrieve entry with id %d, due to error, %s\n",
+					id,
+					err.Error(),
+				)
+			} else if expectedLatestEntry != actualPeerEntry {
+				t.Fatalf("expectedLatestEntry %v, was %v", expectedLatestEntry.Command, actualPeerEntry.Command)
+			} else if expectedLatestEntry.Id != actualPeerEntry.Id {
+				t.Fatalf("expectedLatestEntry %v, was %v", expectedLatestEntry.Id, actualPeerEntry.Id)
+			}
+		}
 	}
 }
