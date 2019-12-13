@@ -9,12 +9,18 @@ import (
 	"time"
 )
 
-func TestIntegrationLogCountHttp(t *testing.T) {
+type testFactory struct {
+	followers []Peer
+	leader    Peer
+}
+
+func newFactory(t *testing.T) *testFactory {
+	rlogger := rlogging.NewZapLogger()
+
 	scheme := "http"
 	host := "127.0.0.1"
 	leaderPort := 8080
-
-	rlogger := rlogging.NewZapLogger()
+	followers := []Peer{}
 
 	leader := NewHttpPeer(
 		scheme,
@@ -23,8 +29,6 @@ func TestIntegrationLogCountHttp(t *testing.T) {
 		0,
 		WithLogger(rlogger),
 	)
-
-	followers := []Peer{}
 
 	for i := 1; i < 3; i++ {
 		followers = append(
@@ -97,9 +101,18 @@ func TestIntegrationLogCountHttp(t *testing.T) {
 		t.Fatalf(valueInterface.(error).Error())
 	}
 
+	return &testFactory{
+		followers: followers,
+		leader:    leader,
+	}
+}
+
+func TestIntegrationLogCountHttp(t *testing.T) {
+	factory := newFactory(t)
+
 	expectedLogCount := 0
 
-	for _, follower := range followers {
+	for _, follower := range factory.followers {
 		if actualLogCount, err := follower.LogCount(); err != nil {
 			t.Fatalf("failed to retrieve log count due to error, %s\n", err.Error())
 		} else if expectedLogCount != actualLogCount {
