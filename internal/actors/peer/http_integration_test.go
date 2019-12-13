@@ -68,7 +68,7 @@ func newFactory(t *testing.T) *testFactory {
 	go func() {
 		t.Log("waiting..")
 
-		for i := 0; i < 20; i++ {
+		for i := 0; i < 5; i++ {
 			t.Logf("%d", i+1)
 
 			time.Sleep(1 * time.Second)
@@ -118,5 +118,17 @@ func TestIntegrationLogCountHttp(t *testing.T) {
 		} else if expectedLogCount != actualLogCount {
 			t.Fatalf("expected %d, was %d", expectedLogCount, actualLogCount)
 		}
+	}
+}
+
+func TestIntegrationPeerCountHttp(t *testing.T) {
+	factory := newFactory(t)
+
+	expectedCount := len(factory.followers)
+
+	if actualCount, err := factory.leader.PeerCount(); err != nil {
+		t.Fatalf("failed to retrieve peer count due to error, %s\n", err.Error())
+	} else if expectedCount != actualCount {
+		t.Fatalf("expected %d, was %d", expectedCount, actualCount)
 	}
 }
