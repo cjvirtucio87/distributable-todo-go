@@ -30,7 +30,7 @@ func (m *httpManager) Start() {
 		channels = append(channels, peerChannel)
 	}
 
-	timeoutChannel := make(chan error)
+	livenessWaitChannel := make(chan error)
 
 	go func() {
 		m.logger.Infof("waiting..")
@@ -43,12 +43,12 @@ func (m *httpManager) Start() {
 
 		m.logger.Infof("done waiting. no errors")
 
-		timeoutChannel <- nil
+		livenessWaitChannel <- nil
 	}()
 
 	channels = append(
 		channels,
-		timeoutChannel,
+		livenessWaitChannel,
 	)
 
 	selectCases := make([]reflect.SelectCase, len(channels))

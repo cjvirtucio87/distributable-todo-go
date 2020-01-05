@@ -64,7 +64,7 @@ func newFactory(t *testing.T) *testFactory {
 		leaderChannel <- leader.Init()
 	}()
 
-	timeoutChannel := make(chan error)
+	livenessWaitChannel := make(chan error)
 
 	go func() {
 		t.Log("waiting..")
@@ -77,13 +77,13 @@ func newFactory(t *testing.T) *testFactory {
 
 		t.Log("done waiting. no errors")
 
-		timeoutChannel <- nil
+		livenessWaitChannel <- nil
 	}()
 
 	channels = append(
 		channels,
 		leaderChannel,
-		timeoutChannel,
+		livenessWaitChannel,
 	)
 
 	// inspired by: https://stackoverflow.com/a/19992525/5665947
