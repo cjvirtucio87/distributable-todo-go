@@ -9,10 +9,10 @@ import (
 )
 
 type httpManager struct {
-	logger       rlogging.Logger
-	peers        []actors.Peer
-	LivenessWaitTime int
-	ShutdownTimeout  int
+	logger           rlogging.Logger
+	peers            []actors.Peer
+	livenessWaitTime int
+	shutdownTimeout  int
 }
 
 func (m *httpManager) Start() {
@@ -35,7 +35,7 @@ func (m *httpManager) Start() {
 	go func() {
 		m.logger.Infof("waiting..")
 
-		for i := 0; i < m.LivenessWaitTime; i++ {
+		for i := 0; i < m.livenessWaitTime; i++ {
 			m.logger.Infof("%d", i+1)
 
 			time.Sleep(1 * time.Second)
@@ -71,7 +71,7 @@ func (m *httpManager) Stop() {
 	m.logger.Infof("Stopping peers.\n")
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
-		time.Duration(m.ShutdownTimeout)*time.Second,
+		time.Duration(m.shutdownTimeout)*time.Second,
 	)
 
 	defer cancel()
