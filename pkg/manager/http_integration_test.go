@@ -16,8 +16,8 @@ func TestIntegrationStart(t *testing.T) {
 	); err != nil {
 		t.Fatal(err)
 	} else {
-		m.Start()
-
 		defer m.Stop()
+
+		m.Start()
 	}
 }
