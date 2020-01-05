@@ -12,22 +12,55 @@ type httpManager struct {
 	peers  []actors.Peer
 }
 
-func (m *httpManager) Healthcheck() error {
+func (m *httpManager) Start() {
+	m.logger.Infof("Starting peers.\n")
+
+	channels := []chan error{}
+
 	for _, peer := range m.peers {
-		if _, err := peer.LogCount(); err != nil {
-			return err
+		peerChannel := make(chan error)
+
+		go func(peerChannel chan error, peer Peer) {
+			peerChannel <- peer.Init()
+		}(peerChannel, peer)
+
+		channels = append(channels, peerChannel)
+	}
+
+	timeoutChannel := make(chan error)
+
+	go func() {
+		t.Log("waiting..")
+
+		for i := 0; i < 5; i++ {
+			t.Logf("%d", i+1)
+
+			time.Sleep(1 * time.Second)
+		}
+
+		t.Log("done waiting. no errors")
+
+		timeoutChannel <- nil
+	}()
+
+	channels = append(
+		channels,
+		timeoutChannel,
+	)
+
+	selectCases := make([]reflect.SelectCase, len(channels))
+
+	for i, ch := range channels {
+		selectCases[i] = reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(ch),
 		}
 	}
 
-	return nil
-}
+	_, value, _ := reflect.Select(selectCases)
 
-func (m *httpManager) Start() {
-	m.logger.Infof("Starting peers.\n")
-	for _, peer := range m.peers {
-		if err := peer.Init(); err != nil {
-			m.logger.Errorf(err.Error())
-		}
+	if valueInterface := value.Interface(); valueInterface != nil {
+		t.Fatalf(valueInterface.(error).Error())
 	}
 }
 
