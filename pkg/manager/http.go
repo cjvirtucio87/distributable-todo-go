@@ -4,6 +4,7 @@ import (
 	"cjvirtucio87/distributed-todo-go/internal/actors/peer"
 	"cjvirtucio87/distributed-todo-go/internal/rlogging"
 	"context"
+	"reflect"
 	"time"
 )
 
@@ -20,7 +21,7 @@ func (m *httpManager) Start() {
 	for _, peer := range m.peers {
 		peerChannel := make(chan error)
 
-		go func(peerChannel chan error, peer Peer) {
+		go func(peerChannel chan error, peer actors.Peer) {
 			peerChannel <- peer.Init()
 		}(peerChannel, peer)
 
@@ -30,15 +31,15 @@ func (m *httpManager) Start() {
 	timeoutChannel := make(chan error)
 
 	go func() {
-		t.Log("waiting..")
+		m.logger.Infof("waiting..")
 
 		for i := 0; i < 5; i++ {
-			t.Logf("%d", i+1)
+			m.logger.Infof("%d", i+1)
 
 			time.Sleep(1 * time.Second)
 		}
 
-		t.Log("done waiting. no errors")
+		m.logger.Infof("done waiting. no errors")
 
 		timeoutChannel <- nil
 	}()
@@ -60,7 +61,7 @@ func (m *httpManager) Start() {
 	_, value, _ := reflect.Select(selectCases)
 
 	if valueInterface := value.Interface(); valueInterface != nil {
-		t.Fatalf(valueInterface.(error).Error())
+		m.logger.Errorf(valueInterface.(error).Error())
 	}
 }
 

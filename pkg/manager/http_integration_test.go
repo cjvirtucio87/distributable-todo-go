@@ -38,11 +38,6 @@ func TestIntegrationStart(t *testing.T) {
 	} else {
 		m.Start()
 
-		if err := m.Healthcheck(); err != nil {
-			t.Fatalf(
-				"manager failed to start peers; error: %s\n",
-				err.Error(),
-			)
-		}
+		defer m.Stop()
 	}
 }
