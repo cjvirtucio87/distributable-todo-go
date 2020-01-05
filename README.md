@@ -12,4 +12,4 @@ Run `go get -u ./...`
 
 # Test
 
-Run `go test ./...`
+Run `DCONFIG_DIR=$(pwd) go test -v --tags integration ./...`

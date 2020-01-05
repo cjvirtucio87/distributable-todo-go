@@ -4,17 +4,24 @@ package actors
 
 import (
 	"cjvirtucio87/distributed-todo-go/internal/dto"
-	"cjvirtucio87/distributed-todo-go/internal/rlog"
 	"cjvirtucio87/distributed-todo-go/internal/rlogging"
+	"reflect"
 	"testing"
+	"time"
 )
 
-func TestIntegrationLogCountHttp(t *testing.T) {
+type testFactory struct {
+	followers []Peer
+	leader    Peer
+}
+
+func newFactory(t *testing.T) *testFactory {
+	rlogger := rlogging.NewZapLogger()
+
 	scheme := "http"
 	host := "127.0.0.1"
 	leaderPort := 8080
-
-	rlogger := rlogging.NewZapLogger()
+	followers := []Peer{}
 
 	leader := NewHttpPeer(
 		scheme,
@@ -23,8 +30,6 @@ func TestIntegrationLogCountHttp(t *testing.T) {
 		0,
 		WithLogger(rlogger),
 	)
-
-	followers := []Peer{}
 
 	for i := 1; i < 3; i++ {
 		followers = append(
@@ -39,21 +44,76 @@ func TestIntegrationLogCountHttp(t *testing.T) {
 		)
 	}
 
+	channels := []chan error{}
+
 	for _, follower := range followers {
-		if err := follower.Init(); err != nil {
-			t.Fatalf(err.Error())
-		}
+		followerChannel := make(chan error)
+
+		go func(followerChannel chan error, follower Peer) {
+			followerChannel <- follower.Init()
+		}(followerChannel, follower)
 
 		leader.AddPeer(follower)
+
+		channels = append(channels, followerChannel)
 	}
 
-	if err := leader.Init(); err != nil {
-		t.Fatalf(err.Error())
+	leaderChannel := make(chan error)
+
+	go func() {
+		leaderChannel <- leader.Init()
+	}()
+
+	livenessWaitChannel := make(chan error)
+
+	go func() {
+		t.Log("waiting..")
+
+		for i := 0; i < 5; i++ {
+			t.Logf("%d", i+1)
+
+			time.Sleep(1 * time.Second)
+		}
+
+		t.Log("done waiting. no errors")
+
+		livenessWaitChannel <- nil
+	}()
+
+	channels = append(
+		channels,
+		leaderChannel,
+		livenessWaitChannel,
+	)
+
+	// inspired by: https://stackoverflow.com/a/19992525/5665947
+	selectCases := make([]reflect.SelectCase, len(channels))
+
+	for i, ch := range channels {
+		selectCases[i] = reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(ch),
+		}
 	}
+
+	_, value, _ := reflect.Select(selectCases)
+
+	if valueInterface := value.Interface(); valueInterface != nil {
+		t.Fatalf(valueInterface.(error).Error())
+	}
+
+	return &testFactory{
+		followers: followers,
+		leader:    leader,
+	}
+}
+
+func TestIntegrationLogCountHttp(t *testing.T) {
+	factory := newFactory(t)
 
 	expectedLogCount := 0
 
-	for _, follower := range followers {
+	for _, follower := range factory.followers {
 		if actualLogCount, err := follower.LogCount(); err != nil {
 			t.Fatalf("failed to retrieve log count due to error, %s\n", err.Error())
 		} else if expectedLogCount != actualLogCount {
@@ -63,45 +123,11 @@ func TestIntegrationLogCountHttp(t *testing.T) {
 }
 
 func TestIntegrationPeerCountHttp(t *testing.T) {
-	scheme := "http"
-	host := "127.0.0.1"
-	leaderPort := 8080
+	factory := newFactory(t)
 
-	rlogger := rlogging.NewZapLogger()
+	expectedCount := len(factory.followers)
 
-	leader := NewHttpPeer(
-		scheme,
-		host,
-		leaderPort,
-		0,
-		WithLogger(rlogger),
-	)
-
-	followers := []Peer{}
-
-	for i := 1; i < 3; i++ {
-		followers = append(
-			followers,
-			NewHttpPeer(
-				scheme,
-				host,
-				leaderPort+i,
-				i,
-				WithLogger(rlogger),
-			),
-		)
-	}
-
-	for _, follower := range followers {
-		leader.AddPeer(follower)
-	}
-
-	if err := leader.Init(); err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	expectedCount := len(followers)
-	if actualCount, err := leader.PeerCount(); err != nil {
+	if actualCount, err := factory.leader.PeerCount(); err != nil {
 		t.Fatalf("failed to retrieve peer count due to error, %s\n", err.Error())
 	} else if expectedCount != actualCount {
 		t.Fatalf("expected %d, was %d", expectedCount, actualCount)
@@ -109,54 +135,7 @@ func TestIntegrationPeerCountHttp(t *testing.T) {
 }
 
 func TestIntegrationSendHttp(t *testing.T) {
-	scheme := "http"
-	host := "127.0.0.1"
-	leaderPort := 8080
-
-	leader := NewHttpPeer(
-		scheme,
-		host,
-		leaderPort,
-		0,
-	)
-
-	followers := []Peer{}
-
-	for i := 1; i < 3; i++ {
-		followers = append(
-			followers,
-			NewHttpPeer(
-				scheme,
-				host,
-				leaderPort+i,
-				i,
-				WithLog(
-					rlog.NewBasicLog(
-						rlog.WithBackend(
-							[]dto.Entry{
-								dto.Entry{
-									Command: "not supposed to be here",
-								},
-								dto.Entry{
-									Command: "not supposed to be here either",
-								},
-							},
-						),
-					),
-				),
-			),
-		)
-	}
-
-	for _, follower := range followers {
-		follower.Init()
-
-		leader.AddPeer(follower)
-	}
-
-	if err := leader.Init(); err != nil {
-		t.Fatalf(err.Error())
-	}
+	factory := newFactory(t)
 
 	expectedSendResult := true
 	expectedEntries := []dto.Entry{
@@ -170,7 +149,7 @@ func TestIntegrationSendHttp(t *testing.T) {
 			Command: "doFoo",
 		},
 	}
-	if actualSendResult, err := leader.Send(
+	if actualSendResult, err := factory.leader.Send(
 		dto.Message{
 			Entries: expectedEntries,
 		},
@@ -182,7 +161,7 @@ func TestIntegrationSendHttp(t *testing.T) {
 
 	expectedPeerLogCount := len(expectedEntries)
 
-	for _, p := range leader.Followers() {
+	for _, p := range factory.leader.Followers() {
 		if actualPeerLogCount, err := p.LogCount(); err != nil {
 			t.Fatalf("failed to retrieve log count due to error, %s\n", err.Error())
 		} else if expectedPeerLogCount != actualPeerLogCount {
