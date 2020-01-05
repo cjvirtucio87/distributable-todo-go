@@ -15,8 +15,8 @@ type HttpPeerConfig struct {
 type HttpManagerConfig struct {
 	logger       rlogging.Logger
 	Peers        []HttpPeerConfig
-	StartTimeout int
-	StopTimeout  int
+	LivenessWaitTime int
+	ShutdownTimeout  int
 }
 
 type Manager interface {
@@ -64,7 +64,7 @@ func NewHttpManager(loader config.Loader) (Manager, error) {
 	return &httpManager{
 		logger:       rlogger,
 		peers:        peers,
-		StartTimeout: c.StartTimeout,
-		StopTimeout:  c.StopTimeout,
+		LivenessWaitTime: c.LivenessWaitTime,
+		ShutdownTimeout:  c.ShutdownTimeout,
 	}, nil
 }
