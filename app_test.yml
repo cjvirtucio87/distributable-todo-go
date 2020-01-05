@@ -1,0 +1,12 @@
+peers:
+- host: 127.0.0.1
+  port: 23080
+  scheme: http
+- host: 127.0.0.1
+  port: 23081
+  scheme: http
+- host: 127.0.0.1
+  port: 23082
+  scheme: http
+startTimeout: 5
+stopTimeout: 5

@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/spf13/viper"
+	"log"
 	"os"
 )
 
@@ -17,7 +18,21 @@ type Loader interface {
 func NewViperLoader(filename, filetype string) Loader {
 	viper.SetConfigName(filename)
 	viper.SetConfigType(filetype)
-	viper.AddConfigPath(os.Getenv(configDirName))
+
+	configDir := os.Getenv(configDirName)
+
+	if len(configDir) != 0 {
+		viper.AddConfigPath(configDir)
+	} else {
+		if workingDir, err := os.Getwd(); err != nil {
+			log.Fatalf(
+				"Error attempting to load configuration from working directory\n%s",
+				err.Error(),
+			)
+		} else {
+			viper.AddConfigPath(workingDir)
+		}
+	}
 
 	return &viperLoader{}
 }

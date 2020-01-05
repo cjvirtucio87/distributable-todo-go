@@ -11,7 +11,8 @@ import (
 type httpManager struct {
 	logger       rlogging.Logger
 	peers        []actors.Peer
-	startTimeout int
+	StartTimeout int
+	StopTimeout  int
 }
 
 func (m *httpManager) Start() {
@@ -34,7 +35,7 @@ func (m *httpManager) Start() {
 	go func() {
 		m.logger.Infof("waiting..")
 
-		for i := 0; i < m.startTimeout; i++ {
+		for i := 0; i < m.StartTimeout; i++ {
 			m.logger.Infof("%d", i+1)
 
 			time.Sleep(1 * time.Second)
@@ -70,7 +71,7 @@ func (m *httpManager) Stop() {
 	m.logger.Infof("Stopping peers.\n")
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
-		5*time.Second,
+		time.Duration(m.StopTimeout)*time.Second,
 	)
 
 	defer cancel()
