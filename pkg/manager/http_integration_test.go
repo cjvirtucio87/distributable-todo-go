@@ -15,6 +15,8 @@ func (l *mockLoader) Unmarshal(obj interface{}) error {
 
 	c.Peers = l.peers
 
+	c.startTimeout = 5
+
 	return nil
 }
 

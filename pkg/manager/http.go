@@ -9,8 +9,9 @@ import (
 )
 
 type httpManager struct {
-	logger rlogging.Logger
-	peers  []actors.Peer
+	logger       rlogging.Logger
+	peers        []actors.Peer
+	startTimeout int
 }
 
 func (m *httpManager) Start() {
@@ -33,7 +34,7 @@ func (m *httpManager) Start() {
 	go func() {
 		m.logger.Infof("waiting..")
 
-		for i := 0; i < 5; i++ {
+		for i := 0; i < m.startTimeout; i++ {
 			m.logger.Infof("%d", i+1)
 
 			time.Sleep(1 * time.Second)
