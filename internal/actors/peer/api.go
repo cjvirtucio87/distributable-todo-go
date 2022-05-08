@@ -13,8 +13,8 @@ type Peer interface {
 	Followers() []Peer
 	Id() int
 	Init() error
-	PeerCount() int
 	LogCount() int
+	PeerCount() int
 	// Send a message to follower peers, adding entries
 	// to own log and sending them to followers for them
 	// to add to their logs.
