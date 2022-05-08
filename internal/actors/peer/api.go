@@ -17,7 +17,12 @@ type Peer interface {
 	PeerCount() int
 	// Send a message to follower peers, adding entries
 	// to own log and sending them to followers for them
-	// to add to their logs.
+	// to add to their logs. Entries in follower logs
+	// that aren't in the leader's log are discarded.
+	// Each follower will only get the entries they
+	// lack, based on the 'next index' tracked by
+	// the leader. Next index is tracked to ensure
+	// that no gaps are left in each follower's log.
 	Send(m Message) error
 }
 
