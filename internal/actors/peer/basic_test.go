@@ -7,25 +7,33 @@ import (
 
 func TestSendSendsMessageToFollowers(t *testing.T) {
 	testData := []struct{
-		expectedEntryCount int
 		followerLogEntries []rlog.Entry
+		leaderMessage Message
 		peerCount int
 	}{
 		{
-			1,
 			[]rlog.Entry{
 				rlog.Entry{Command: "doFoo"},
+			},
+			Message{
+				Entries: []rlog.Entry{
+					rlog.Entry{Command: "doFoo"},
+				},
 			},
 			3,
 		},
 		{
-			1,
 			[]rlog.Entry{
 				rlog.Entry{
 					Command: "not supposed to be here",
 				},
 				rlog.Entry{
 					Command: "not supposed to be here either",
+				},
+			},
+			Message{
+				Entries: []rlog.Entry{
+					rlog.Entry{Command: "doFoo"},
 				},
 			},
 			3,
@@ -68,27 +76,28 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = leader.Send(
-			Message{
-				Entries: []rlog.Entry{
-					rlog.Entry{Command: "doFoo"},
-				},
-			},
-		)
+		err = leader.Send(testDatum.leaderMessage)
 
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		for _, followerLog := range followerLogs {
-			entries := followerLog.Entries(0, 1)
-			actualEntryCount := len(entries)
-			if actualEntryCount != testDatum.expectedEntryCount {
-				t.Fatalf("expected [%d], got [%d]", testDatum.expectedEntryCount, actualEntryCount)
+			expectedEntries := leaderLog.Entries(0, -1)
+			actualEntries := followerLog.Entries(0, -1)
+
+			expectedEntryCount := len(expectedEntries)
+			actualEntryCount := len(actualEntries)
+			if actualEntryCount != expectedEntryCount {
+				t.Fatalf("expected [%d], got [%d]", expectedEntryCount, actualEntryCount)
 			}
 
-			expectedEntry := leaderLog.Entry(0)
-			for _, actualEntry := range entries {
+			for i, expectedEntry := range expectedEntries {
+				actualEntry := actualEntries[i]
+				if expectedEntry.Id != actualEntry.Id {
+					t.Fatalf("expected [%d], got [%d]", expectedEntry.Id, actualEntry.Id)
+				}
+
 				if expectedEntry.Command != actualEntry.Command {
 					t.Fatalf("expected [%s], got [%s]", expectedEntry.Command, actualEntry.Command)
 				}

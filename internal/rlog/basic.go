@@ -37,5 +37,9 @@ func (l *BasicLog) Entries(start, end int) []Entry {
 		return make([]Entry, 0)
 	}
 
+	if end == -1 {
+		return l.backend[start:]
+	}
+
 	return l.backend[start:end]
 }
