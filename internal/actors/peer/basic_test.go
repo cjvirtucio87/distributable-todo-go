@@ -12,7 +12,12 @@ func TestSendDiscardsInvalidFollowerLogEntries(t *testing.T) {
 		leader.AddPeer(NewBasicPeer(i))
 	}
 
-	err := leader.Send(
+	err := leader.Init()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = leader.Send(
 		Message{
 			Entries: []rlog.Entry{
 				rlog.Entry{Command: "doFoo"},
@@ -45,6 +50,11 @@ func TestSendDiscardsInvalidFollowerLogEntries(t *testing.T) {
 				peers:        []Peer{},
 			},
 		)
+	}
+
+	err = leader.Init()
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	expectedEntry := rlog.Entry{Command: "doFoo"}

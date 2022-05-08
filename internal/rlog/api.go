@@ -1,6 +1,10 @@
 package rlog
 
 type Log interface {
+	// Although entryId dictates the position in the
+	// log, nextIndex dictates the starting point
+	// for elements to be discarded in favor of
+	// the parameter entries.
 	AddEntries(nextIndex int, entries []Entry) error
 	Count() int
 	Entry(idx int) *Entry
@@ -8,6 +12,7 @@ type Log interface {
 }
 
 type Entry struct {
+	// determines position in log
 	Id      int
 	Command string
 }

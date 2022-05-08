@@ -1,11 +1,25 @@
 package rlog
 
+import "fmt"
+
 type BasicLog struct {
 	backend []Entry
 }
 
 func (l *BasicLog) AddEntries(nextIndex int, entries []Entry) error {
-	l.backend = append(l.backend[:nextIndex], entries...)
+	backend := l.backend[:nextIndex]
+
+	for _, entry := range entries {
+		if entry.Id == nextIndex {
+			backend = append(backend, entry)
+		} else if entry.Id > nextIndex {
+			return fmt.Errorf("entryId [%d] exceeds nextIndex [%d]", entry.Id, nextIndex)
+		} else {
+			backend[entry.Id] = entry
+		}
+	}
+
+	l.backend = backend
 
 	return nil
 }
