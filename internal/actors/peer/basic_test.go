@@ -5,19 +5,6 @@ import (
 	"testing"
 )
 
-func TestAddPeer(t *testing.T) {
-	leader := NewBasicPeer(0)
-
-	leader.AddPeer(NewBasicPeer(1))
-
-	expectedCount := 1
-	actualCount := leader.PeerCount()
-
-	if expectedCount != actualCount {
-		t.Fatalf("expectedCount %d, was %d", expectedCount, actualCount)
-	}
-}
-
 func TestSend(t *testing.T) {
 	leader := NewBasicPeer(0)
 
