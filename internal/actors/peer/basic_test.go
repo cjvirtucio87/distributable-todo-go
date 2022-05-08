@@ -7,53 +7,53 @@ import (
 
 func TestSendSendsMessageToFollowers(t *testing.T) {
 	testData := []struct{
-		followerLogEntries []rlog.Entry
+		followerLogEntries []*rlog.Entry
 		leaderMessage Message
 		peerCount int
 	}{
 		{
-			[]rlog.Entry{},
+			[]*rlog.Entry{},
 			Message{
-				Entries: []rlog.Entry{
-					rlog.Entry{Command: "doFoo"},
+				Entries: []*rlog.Entry{
+					&rlog.Entry{Command: "doFoo"},
 				},
 			},
 			3,
 		},
 		{
-			[]rlog.Entry{
-				rlog.Entry{Command: "doFoo"},
+			[]*rlog.Entry{
+				&rlog.Entry{Command: "doFoo"},
 			},
 			Message{
-				Entries: []rlog.Entry{
-					rlog.Entry{Command: "doFoo"},
+				Entries: []*rlog.Entry{
+					&rlog.Entry{Command: "doFoo"},
 				},
 			},
 			3,
 		},
 		{
-			[]rlog.Entry{
-				rlog.Entry{
+			[]*rlog.Entry{
+				&rlog.Entry{
 					Command: "not supposed to be here",
 				},
-				rlog.Entry{
+				&rlog.Entry{
 					Command: "not supposed to be here either",
 				},
 			},
 			Message{
-				Entries: []rlog.Entry{
-					rlog.Entry{Command: "doFoo"},
+				Entries: []*rlog.Entry{
+					&rlog.Entry{Command: "doFoo"},
 				},
 			},
 			3,
 		},
 		{
-			[]rlog.Entry{},
+			[]*rlog.Entry{},
 			Message{
-				Entries: []rlog.Entry{
-					rlog.Entry{Command: "doFoo"},
-					rlog.Entry{Command: "doBar"},
-					rlog.Entry{Command: "doBaz"},
+				Entries: []*rlog.Entry{
+					&rlog.Entry{Command: "doFoo"},
+					&rlog.Entry{Command: "doBar"},
+					&rlog.Entry{Command: "doBaz"},
 				},
 			},
 			3,
@@ -114,6 +114,10 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 
 			for i, expectedEntry := range expectedEntries {
 				actualEntry := actualEntries[i]
+				if expectedEntry.Id != i {
+					t.Fatalf("[%v] expected [%d], got [%d]", expectedEntries, expectedEntry.Id, i)
+				}
+
 				if expectedEntry.Id != actualEntry.Id {
 					t.Fatalf("expected [%d], got [%d]", expectedEntry.Id, actualEntry.Id)
 				}

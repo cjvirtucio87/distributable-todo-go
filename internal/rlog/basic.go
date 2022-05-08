@@ -3,10 +3,10 @@ package rlog
 import "fmt"
 
 type BasicLog struct {
-	backend []Entry
+	backend []*Entry
 }
 
-func (l *BasicLog) AddEntries(nextIndex int, entries []Entry) error {
+func (l *BasicLog) AddEntries(nextIndex int, entries []*Entry) error {
 	backend := l.backend[:nextIndex]
 
 	for _, entry := range entries {
@@ -17,6 +17,8 @@ func (l *BasicLog) AddEntries(nextIndex int, entries []Entry) error {
 		} else {
 			backend[entry.Id] = entry
 		}
+
+		nextIndex++
 	}
 
 	l.backend = backend
@@ -29,12 +31,12 @@ func (l *BasicLog) Count() int {
 }
 
 func (l *BasicLog) Entry(idx int) *Entry {
-	return &l.backend[idx]
+	return l.backend[idx]
 }
 
-func (l *BasicLog) Entries(start, end int) []Entry {
+func (l *BasicLog) Entries(start, end int) []*Entry {
 	if start < 0 || end > l.Count() {
-		return make([]Entry, 0)
+		return make([]*Entry, 0)
 	}
 
 	if end == -1 {

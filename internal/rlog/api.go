@@ -5,10 +5,10 @@ type Log interface {
 	// log, nextIndex dictates the starting point
 	// for elements to be discarded in favor of
 	// the parameter entries.
-	AddEntries(nextIndex int, entries []Entry) error
+	AddEntries(nextIndex int, entries []*Entry) error
 	Count() int
 	Entry(idx int) *Entry
-	Entries(start, end int) []Entry
+	Entries(start, end int) []*Entry
 }
 
 type Entry struct {
@@ -27,7 +27,7 @@ func NewBasicLog(options ...func(*BasicLog)) Log {
 	return l
 }
 
-func WithBackend(backend []Entry) func(*BasicLog) {
+func WithBackend(backend []*Entry) func(*BasicLog) {
 	return func(l *BasicLog) {
 		l.backend = backend
 	}

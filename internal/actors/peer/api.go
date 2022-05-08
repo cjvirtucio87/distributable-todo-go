@@ -23,7 +23,7 @@ type Peer interface {
 
 type Message struct {
 	// The entries to be added to peer logs.
-	Entries []rlog.Entry
+	Entries []*rlog.Entry
 }
 
 func NewBasicPeer(id int) Peer {

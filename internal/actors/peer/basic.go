@@ -19,7 +19,7 @@ type basicPeer struct {
 
 // Entries to be appended to the log.
 type EntryCollection struct {
-	Entries []rlog.Entry
+	Entries []*rlog.Entry
 	// Starting point for the entries. Pre-existing
 	// entries in the follower's log beginning from
 	// this index will be discarded in favor of the new
@@ -81,7 +81,12 @@ func (p *basicPeer) PeerCount() int {
 }
 
 func (p *basicPeer) Send(m Message) error {
-	err := p.rlog.AddEntries(p.rlog.Count(), m.Entries)
+	err := p.AddEntries(
+		EntryCollection{
+			Entries:   m.Entries,
+			NextIndex: p.LogCount(),
+		},
+	)
 
 	if err != nil {
 		return err
