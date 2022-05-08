@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestSendDiscardsInvalidFollowerLogEntries(t *testing.T) {
+func TestSendSendsMessageToFollowers(t *testing.T) {
 	leader := NewBasicPeer(0)
 
 	for i := 1; i < 3; i++ {
@@ -28,8 +28,10 @@ func TestSendDiscardsInvalidFollowerLogEntries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
 
-	leader = NewBasicPeer(0)
+func TestSendDiscardsInvalidFollowerLogEntries(t *testing.T) {
+	leader := NewBasicPeer(0)
 	for i := 1; i < 3; i++ {
 		leader.AddPeer(
 			&basicPeer {
@@ -52,7 +54,7 @@ func TestSendDiscardsInvalidFollowerLogEntries(t *testing.T) {
 		)
 	}
 
-	err = leader.Init()
+	err := leader.Init()
 	if err != nil {
 		t.Fatal(err)
 	}
