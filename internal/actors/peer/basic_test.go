@@ -6,7 +6,12 @@ import (
 )
 
 func TestSendSendsMessageToFollowers(t *testing.T) {
-	leader := NewBasicPeer(0)
+	leader := &basicPeer{
+		id:           0,
+		rlog:         rlog.NewBasicLog(),
+		NextIndexMap: make(map[int]int),
+		peers:        []Peer{},
+	}
 
 	for i := 1; i < 3; i++ {
 		leader.AddPeer(NewBasicPeer(i))
@@ -24,7 +29,7 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 			},
 		},
 	)
-	
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +39,7 @@ func TestSendDiscardsInvalidFollowerLogEntries(t *testing.T) {
 	leader := NewBasicPeer(0)
 	for i := 1; i < 3; i++ {
 		leader.AddPeer(
-			&basicPeer {
+			&basicPeer{
 				id: i,
 				rlog: rlog.NewBasicLog(
 					rlog.WithBackend(
