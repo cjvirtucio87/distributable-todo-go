@@ -5,6 +5,24 @@ import (
 	"testing"
 )
 
+func testFollowerLogs(t *testing.T, leaderLog rlog.Log, followerLogs []rlog.Log) {
+	for _, followerLog := range followerLogs {
+		expectedEntryCount := 1
+		entries := followerLog.Entries(0, 1)
+		actualEntryCount := len(entries)
+		if actualEntryCount != expectedEntryCount {
+			t.Fatalf("expected [%d], got [%d]", expectedEntryCount, actualEntryCount)
+		}
+
+		expectedEntry := leaderLog.Entry(0)
+		for _, actualEntry := range entries {
+			if expectedEntry.Command != actualEntry.Command {
+				t.Fatalf("expected [%s], got [%s]", expectedEntry.Command, actualEntry.Command)
+			}
+		}
+	}
+}
+
 func TestSendSendsMessageToFollowers(t *testing.T) {
 	peerCount := 3
 	leaderLog := rlog.NewBasicLog()
@@ -48,21 +66,7 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, followerLog := range followerLogs {
-		expectedEntryCount := 1
-		entries := followerLog.Entries(0, 1)
-		actualEntryCount := len(entries)
-		if actualEntryCount != expectedEntryCount {
-			t.Fatalf("expected [%d], got [%d]", expectedEntryCount, actualEntryCount)
-		}
-
-		expectedEntry := leaderLog.Entry(0)
-		for _, actualEntry := range entries {
-			if expectedEntry.Command != actualEntry.Command {
-				t.Fatalf("expected [%s], got [%s]", expectedEntry.Command, actualEntry.Command)
-			}
-		}
-	}
+	testFollowerLogs(t, leaderLog, followerLogs)
 }
 
 func TestSendDiscardsInvalidFollowerLogEntries(t *testing.T) {
@@ -119,19 +123,5 @@ func TestSendDiscardsInvalidFollowerLogEntries(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, followerLog := range followerLogs {
-		expectedEntryCount := 1
-		entries := followerLog.Entries(0, 1)
-		actualEntryCount := len(entries)
-		if actualEntryCount != expectedEntryCount {
-			t.Fatalf("expected [%d], got [%d]", expectedEntryCount, actualEntryCount)
-		}
-
-		expectedEntry := leaderLog.Entry(0)
-		for _, actualEntry := range entries {
-			if expectedEntry.Command != actualEntry.Command {
-				t.Fatalf("expected [%s], got [%s]", expectedEntry.Command, actualEntry.Command)
-			}
-		}
-	}
+	testFollowerLogs(t, leaderLog, followerLogs)
 }
