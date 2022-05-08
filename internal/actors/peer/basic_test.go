@@ -12,6 +12,15 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 		peerCount int
 	}{
 		{
+			[]rlog.Entry{},
+			Message{
+				Entries: []rlog.Entry{
+					rlog.Entry{Command: "doFoo"},
+				},
+			},
+			3,
+		},
+		{
 			[]rlog.Entry{
 				rlog.Entry{Command: "doFoo"},
 			},
@@ -34,6 +43,17 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 			Message{
 				Entries: []rlog.Entry{
 					rlog.Entry{Command: "doFoo"},
+				},
+			},
+			3,
+		},
+		{
+			[]rlog.Entry{},
+			Message{
+				Entries: []rlog.Entry{
+					rlog.Entry{Command: "doFoo"},
+					rlog.Entry{Command: "doBar"},
+					rlog.Entry{Command: "doBaz"},
 				},
 			},
 			3,
