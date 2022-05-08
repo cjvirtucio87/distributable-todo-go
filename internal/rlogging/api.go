@@ -11,16 +11,21 @@ type Logger interface {
 	Errorf(tmpl string, args ...interface{})
 }
 
-func NewZapLogger() Logger {
-	logger, _ := zap.NewProduction()
+func NewZapLogger() (Logger, error) {
+	cfg := zap.NewProductionConfig()
+	// TODO: this needs to be configurable
+	cfg.OutputPaths = []string{
+		"/tmp/test.log",
+	}
 
-	defer func(logger *zap.Logger) {
-		_ = logger.Sync()
-	}(logger)
+	logger, err := cfg.Build()
+	if err != nil {
+		return nil, err
+	}
 
 	return &ZapLogger{
 		SugaredLogger: logger.Sugar(),
-	}
+	}, nil
 }
 
 func NewWriterLogger(logger Logger) io.Writer {
