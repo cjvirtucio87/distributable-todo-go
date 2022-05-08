@@ -2,7 +2,6 @@ package actors
 
 import (
 	"cjvirtucio87/distributed-todo-go/internal/rlog"
-	"errors"
 	"fmt"
 )
 
@@ -107,12 +106,10 @@ func (p *basicPeer) Send(m Message) error {
 
 	peerCount := p.PeerCount()
 	if successfulAppendCount != peerCount {
-		return errors.New(
-			fmt.Sprintf(
-				"only %d out of %d successful append calls",
-				successfulAppendCount,
-				peerCount,
-			),
+		return fmt.Errorf(
+			"only %d out of %d successful append calls",
+			successfulAppendCount,
+			peerCount,
 		)
 	}
 

@@ -14,7 +14,9 @@ type Logger interface {
 func NewZapLogger() Logger {
 	logger, _ := zap.NewProduction()
 
-	defer logger.Sync()
+	defer func(logger *zap.Logger) {
+		_ = logger.Sync()
+	}(logger)
 
 	return &ZapLogger{
 		SugaredLogger: logger.Sugar(),
