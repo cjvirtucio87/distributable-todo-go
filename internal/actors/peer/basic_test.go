@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestSend(t *testing.T) {
+func TestSendDiscardsInvalidFollowerLogEntries(t *testing.T) {
 	leader := NewBasicPeer(0)
 
 	for i := 1; i < 3; i++ {
