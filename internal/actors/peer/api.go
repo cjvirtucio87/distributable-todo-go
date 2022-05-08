@@ -1,64 +1,36 @@
 package actors
 
 import (
-	"cjvirtucio87/distributed-todo-go/internal/dto"
 	"cjvirtucio87/distributed-todo-go/internal/rlog"
-	"cjvirtucio87/distributed-todo-go/internal/rlogging"
-	"context"
 )
 
 type Peer interface {
-	AddEntries(e dto.EntryInfo) (bool, error)
+	// Add entries attempts to add entries from the leader
+	// to its log.
+	AddEntries(entries EntryCollection) error
 	AddPeer(peer Peer)
-	Entry(idx int) (dto.Entry, error)
+	Entry(idx int) *rlog.Entry
 	Followers() []Peer
 	Id() int
 	Init() error
-	PeerCount() (int, error)
-	LogCount() (int, error)
-	Send(m dto.Message) (bool, error)
-	setLog(log rlog.Log) error
-	setLogger(rlogger rlogging.Logger) error
-	Shutdown(ctx context.Context) error
+	PeerCount() int
+	LogCount() int
+	// Send a message to follower peers, adding entries
+	// to own log and sending them to followers for them
+	// to add to their logs.
+	Send(m Message) error
+}
+
+type Message struct {
+	// The entries to be added to peer logs.
+	Entries []rlog.Entry
 }
 
 func NewBasicPeer(id int) Peer {
 	return &basicPeer{
 		id:           id,
 		rlog:         rlog.NewBasicLog(),
-		NextIndexMap: map[int]int{},
+		NextIndexMap: make(map[int]int),
 		peers:        []Peer{},
-	}
-}
-
-func NewHttpPeer(scheme, host string, port, id int, options ...func(p Peer)) Peer {
-	p := &httpPeer{
-		basicPeer: basicPeer{
-			id:           id,
-			rlog:         rlog.NewBasicLog(),
-			NextIndexMap: map[int]int{},
-			peers:        []Peer{},
-		},
-		scheme: scheme,
-		host:   host,
-		port:   port,
-	}
-
-	for _, o := range options {
-		o(p)
-	}
-
-	return p
-}
-
-func WithLog(log rlog.Log) func(p Peer) {
-	return func(p Peer) {
-		p.setLog(log)
-	}
-}
-
-func WithLogger(rlogger rlogging.Logger) func(p Peer) {
-	return func(p Peer) {
-		p.setLogger(rlogger)
 	}
 }
