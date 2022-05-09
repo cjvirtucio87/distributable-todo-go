@@ -6,10 +6,10 @@ import (
 )
 
 func TestSendSendsMessageToFollowers(t *testing.T) {
-	testData := []struct{
+	testData := []struct {
 		followerLogEntries []*rlog.Entry
-		leaderMessage Message
-		peerCount int
+		leaderMessage      Message
+		peerCount          int
 	}{
 		{
 			[]*rlog.Entry{},

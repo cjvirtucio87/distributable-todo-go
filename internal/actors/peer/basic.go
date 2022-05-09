@@ -2,12 +2,7 @@ package actors
 
 import (
 	"cjvirtucio87/distributed-todo-go/internal/rlog"
-	"cjvirtucio87/distributed-todo-go/internal/rlogging"
 	"fmt"
-)
-
-var (
-	logger, _ = rlogging.NewZapLogger()
 )
 
 type basicPeer struct {
@@ -112,9 +107,6 @@ func (p *basicPeer) Send(m Message) error {
 			)
 
 			if err == nil {
-				// TODO: remove this downcast and log statement
-				otherP := otherPeer.(*basicPeer)
-				logger.Infof("%v", otherP.rlog.Entries(0, otherP.LogCount()))
 				successfulAppendCount++
 				break
 			}

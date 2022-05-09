@@ -11,14 +11,13 @@ type Logger interface {
 	Errorf(tmpl string, args ...interface{})
 }
 
-func NewZapLogger() (Logger, error) {
-	cfg := zap.NewProductionConfig()
-	// TODO: this needs to be configurable
-	cfg.OutputPaths = []string{
-		"/tmp/test.log",
+func NewZapLogger(options ...func(zap.Config) zap.Config) (Logger, error) {
+	c := zap.NewProductionConfig()
+	for _, o := range options {
+		c = o(c)
 	}
 
-	logger, err := cfg.Build()
+	logger, err := c.Build()
 	if err != nil {
 		return nil, err
 	}
@@ -31,5 +30,17 @@ func NewZapLogger() (Logger, error) {
 func NewWriterLogger(logger Logger) io.Writer {
 	return &WriterLogger{
 		Logger: logger,
+	}
+}
+
+func WithOutputPath(outputPath string) func(zap.Config) zap.Config {
+	return func(c zap.Config) zap.Config {
+		if c.OutputPaths == nil {
+			c.OutputPaths = []string{}
+		}
+
+		c.OutputPaths = append(c.OutputPaths, outputPath)
+
+		return c
 	}
 }
