@@ -1,176 +1,131 @@
 package actors
 
 import (
-	"cjvirtucio87/distributed-todo-go/internal/dto"
 	"cjvirtucio87/distributed-todo-go/internal/rlog"
-	"cjvirtucio87/distributed-todo-go/internal/rlogging"
-	"context"
-	"errors"
 	"fmt"
 )
 
 type basicPeer struct {
 	id           int
 	rlog         rlog.Log
-	rlogger      rlogging.Logger
 	NextIndexMap map[int]int
 	peers        []Peer
 }
 
-func (p *basicPeer) AddEntries(e dto.EntryInfo) (bool, error) {
-	if latestIndex, err := p.LogCount(); err != nil {
-		return false, err
-	} else if e.NextIndex > latestIndex+1 {
-		return false, nil
-	} else {
-		for _, entry := range e.Entries {
-			entry.Id = latestIndex + 1
-			latestIndex++
-		}
+// Entries to be appended to the log.
+type EntryCollection struct {
+	Entries []*rlog.Entry
+	// Starting point for the entries. Pre-existing
+	// entries in the follower's log beginning from
+	// this index will be discarded in favor of the new
+	// entries from the leader.
+	NextIndex int
+}
 
-		if err := p.rlog.AddEntries(e); err != nil {
-			return false, err
-		} else {
-			return true, nil
-		}
+func (p *basicPeer) AddEntries(entries EntryCollection) error {
+	count := p.LogCount()
+
+	if entries.NextIndex > count {
+		return fmt.Errorf(
+			"NextIndex [%d] exceeds count [%d]",
+			entries.NextIndex,
+			count,
+		)
 	}
+
+	id := entries.NextIndex
+	for _, entry := range entries.Entries {
+		entry.Id = id
+		id++
+	}
+
+	return p.rlog.AddEntries(entries.NextIndex, entries.Entries)
 }
 
 func (p *basicPeer) AddPeer(otherPeer Peer) {
 	p.peers = append(p.peers, otherPeer)
 }
 
-func (p *basicPeer) Entry(idx int) (dto.Entry, error) {
-	var e dto.Entry
-	if result, err := p.LogCount(); err != nil {
-		return e, err
-	} else if result <= idx {
-		return e, errors.New(
-			fmt.Sprintf(
-				"idx %d exceeds log boundary",
-				idx,
-			),
-		)
-	} else {
-		return p.rlog.Entry(idx)
-	}
+func (p *basicPeer) Entry(idx int) *rlog.Entry {
+	return p.rlog.Entry(idx)
 }
 
 func (p *basicPeer) Followers() []Peer {
 	return p.peers[:]
 }
 
-func (p *basicPeer) Init() error {
-	for _, otherPeer := range p.peers {
-		if result, err := p.LogCount(); err != nil {
-			return err
-		} else {
-			p.NextIndexMap[otherPeer.Id()] = result
-		}
-	}
-
-	return nil
-}
-
-func (p *basicPeer) LogCount() (int, error) {
-	return p.rlog.Count(), nil
-}
-
-func (p *basicPeer) PeerCount() (int, error) {
-	return len(p.peers), nil
-}
-
 func (p *basicPeer) Id() int {
 	return p.id
 }
 
-func (p *basicPeer) Send(m dto.Message) (bool, error) {
-	if err := p.rlog.AddEntries(
-		dto.EntryInfo{
-			NextIndex: p.rlog.Count(),
+func (p *basicPeer) Init() error {
+	for _, otherPeer := range p.peers {
+		result := p.LogCount()
+		p.NextIndexMap[otherPeer.Id()] = result
+	}
+
+	return nil
+}
+
+func (p *basicPeer) LogCount() int {
+	return p.rlog.Count()
+}
+
+func (p *basicPeer) PeerCount() int {
+	return len(p.peers)
+}
+
+func (p *basicPeer) Send(m Message) error {
+	err := p.AddEntries(
+		EntryCollection{
 			Entries:   m.Entries,
+			NextIndex: p.LogCount(),
 		},
-	); err != nil {
-		return false, err
-	} else {
-		var successfulAppendCount int
+	)
 
-		for _, otherPeer := range p.peers {
-			otherPeerId := otherPeer.Id()
-			nextIndex := p.NextIndexMap[otherPeerId]
+	if err != nil {
+		return err
+	}
 
-			entries, ok := p.rlog.Entries(
+	var successfulAppendCount int
+	for _, otherPeer := range p.peers {
+		otherPeerId := otherPeer.Id()
+		// Keep trying to AddEntries() until it succeeds
+		for nextIndex := p.NextIndexMap[otherPeerId]; nextIndex >= 0; nextIndex-- {
+			entries := p.rlog.Entries(
 				nextIndex,
-				p.rlog.Count(),
+				p.LogCount(),
 			)
 
-			if !ok {
-				return false, errors.New("unable to retrieve entries")
-			}
+			p.NextIndexMap[otherPeerId] = nextIndex
 
-			if successfulAppend, err := otherPeer.AddEntries(
-				dto.EntryInfo{
+			err := otherPeer.AddEntries(
+				EntryCollection{
 					Entries:   entries,
 					NextIndex: nextIndex,
 				},
-			); err != nil {
-				return false, err
-			} else if !successfulAppend {
-				for nextIndex := p.NextIndexMap[otherPeerId]; nextIndex >= 0; nextIndex-- {
-					if successfulAppend, err := otherPeer.AddEntries(
-						dto.EntryInfo{
-							Entries:   entries,
-							NextIndex: nextIndex,
-						},
-					); err != nil {
-						return false, err
-					} else if successfulAppend {
-						successfulAppendCount++
-						break
-					}
-
-					p.NextIndexMap[otherPeerId] = nextIndex - 1
-				}
-			} else {
-				successfulAppendCount++
-			}
-		}
-
-		if peerCount, err := p.PeerCount(); err != nil {
-			return false, err
-		} else if successfulAppendCount != peerCount {
-			return false, errors.New(
-				fmt.Sprintf(
-					"only %d out of %d successful append calls",
-					successfulAppendCount,
-					peerCount,
-				),
 			)
-		} else {
-			for _, otherPeer := range p.peers {
-				otherPeerId := otherPeer.Id()
-				p.NextIndexMap[otherPeerId] += len(m.Entries)
-			}
 
-			return true, nil
+			if err == nil {
+				successfulAppendCount++
+				break
+			}
 		}
 	}
-}
 
-func (p *basicPeer) setLog(log rlog.Log) error {
-	p.rlog = log
+	peerCount := p.PeerCount()
+	if successfulAppendCount != peerCount {
+		return fmt.Errorf(
+			"only %d out of %d successful append calls",
+			successfulAppendCount,
+			peerCount,
+		)
+	}
 
-	return nil
-}
-
-func (p *basicPeer) setLogger(rlogger rlogging.Logger) error {
-	p.rlogger = rlogger
-
-	return nil
-}
-
-func (p *basicPeer) Shutdown(ctx context.Context) error {
-	p.NextIndexMap = nil
+	for _, otherPeer := range p.peers {
+		otherPeerId := otherPeer.Id()
+		p.NextIndexMap[otherPeerId] += len(m.Entries)
+	}
 
 	return nil
 }

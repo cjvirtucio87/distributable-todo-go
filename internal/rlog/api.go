@@ -1,12 +1,20 @@
 package rlog
 
-import "cjvirtucio87/distributed-todo-go/internal/dto"
-
 type Log interface {
-	AddEntries(entryInfo dto.EntryInfo) error
+	// Although entryId dictates the position in the
+	// log, nextIndex dictates the starting point
+	// for elements to be discarded in favor of
+	// the parameter entries.
+	AddEntries(nextIndex int, entries []*Entry) error
 	Count() int
-	Entry(idx int) (dto.Entry, error)
-	Entries(start, end int) ([]dto.Entry, bool)
+	Entry(idx int) *Entry
+	Entries(start, end int) []*Entry
+}
+
+type Entry struct {
+	// determines position in log
+	Id      int
+	Command string
 }
 
 func NewBasicLog(options ...func(*BasicLog)) Log {
@@ -19,7 +27,7 @@ func NewBasicLog(options ...func(*BasicLog)) Log {
 	return l
 }
 
-func WithBackend(backend []dto.Entry) func(*BasicLog) {
+func WithBackend(backend []*Entry) func(*BasicLog) {
 	return func(l *BasicLog) {
 		l.backend = backend
 	}
