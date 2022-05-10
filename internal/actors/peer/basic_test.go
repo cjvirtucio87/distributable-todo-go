@@ -10,6 +10,7 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 		followerLogEntries []*rlog.Entry
 		leaderMessage      Message
 		peerCount          int
+		secondLeaderMessage *Message
 	}{
 		{
 			[]*rlog.Entry{},
@@ -19,6 +20,7 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 				},
 			},
 			3,
+			nil,
 		},
 		{
 			[]*rlog.Entry{
@@ -30,6 +32,7 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 				},
 			},
 			3,
+			nil,
 		},
 		{
 			[]*rlog.Entry{
@@ -46,6 +49,7 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 				},
 			},
 			3,
+			nil,
 		},
 		{
 			[]*rlog.Entry{},
@@ -57,53 +61,36 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 				},
 			},
 			3,
+			nil,
+		},
+		{
+			[]*rlog.Entry{},
+			Message{
+				Entries: []*rlog.Entry{
+					&rlog.Entry{Command: "doFoo"},
+					&rlog.Entry{Command: "doBar"},
+					&rlog.Entry{Command: "doBaz"},
+				},
+			},
+			3,
+			&Message{
+				Entries: []*rlog.Entry{
+					&rlog.Entry{Command: "doHip"},
+					&rlog.Entry{Command: "doHop"},
+				},
+			},
 		},
 	}
 
-	for _, testDatum := range testData {
-		leaderLog := rlog.NewBasicLog()
-		leader := &basicPeer{
-			id:           0,
-			rlog:         leaderLog,
-			NextIndexMap: make(map[int]int),
-			peers:        []Peer{},
-		}
-
-		followerLogs := make([]rlog.Log, testDatum.peerCount)
-		for i := 0; i < testDatum.peerCount; i++ {
-			if len(testDatum.followerLogEntries) == 0 {
-				followerLogs[i] = rlog.NewBasicLog()
-			} else {
-				followerLogs[i] = rlog.NewBasicLog(
-					rlog.WithBackend(testDatum.followerLogEntries),
-				)
-			}
-		}
-
-		for i := 0; i < testDatum.peerCount; i++ {
-			leader.AddPeer(
-				&basicPeer{
-					id:           i + 1,
-					rlog:         followerLogs[i],
-					NextIndexMap: make(map[int]int),
-					peers:        []Peer{},
-				},
-			)
-		}
-
-		err := leader.Init()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = leader.Send(testDatum.leaderMessage)
+	testSend := func (leader Peer, followers []Peer, m Message, leaderLog rlog.Log, followerLogs []rlog.Log) {
+		err := leader.Send(m)
 
 		if err != nil {
 			t.Fatal(err)
 		}
 
+		expectedEntries := leaderLog.Entries(0, -1)
 		for _, followerLog := range followerLogs {
-			expectedEntries := leaderLog.Entries(0, -1)
 			actualEntries := followerLog.Entries(0, -1)
 
 			expectedEntryCount := len(expectedEntries)
@@ -127,5 +114,65 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 				}
 			}
 		}
+
+		leader.Commit()
+
+		expectedLastAppliedId := expectedEntries[len(expectedEntries)-1].Id
+		actualLastAppliedId := leader.LastAppliedId()
+		if expectedLastAppliedId != actualLastAppliedId {
+			t.Fatalf("expected [%d], got [%d]", expectedLastAppliedId, actualLastAppliedId)
+		}
+
+		for _, follower := range followers {
+			actualLastAppliedId = follower.LastAppliedId()
+			if expectedLastAppliedId != actualLastAppliedId {
+				t.Fatalf("expected [%d], got [%d]", expectedLastAppliedId, actualLastAppliedId)
+			}
+		}
+	}
+
+	for _, testDatum := range testData {
+		func (followerLogEntries []*rlog.Entry, leaderMessage Message, peerCount int, secondLeaderMessage *Message) {
+			leaderLog := rlog.NewBasicLog()
+			leader := &basicPeer{
+				id:           0,
+				rlog:         leaderLog,
+				NextIndexMap: make(map[int]int),
+				peers:        []Peer{},
+			}
+
+			followerLogs := make([]rlog.Log, peerCount)
+			for i := 0; i < peerCount; i++ {
+				if len(followerLogEntries) == 0 {
+					followerLogs[i] = rlog.NewBasicLog()
+				} else {
+					followerLogs[i] = rlog.NewBasicLog(
+						rlog.WithBackend(followerLogEntries),
+					)
+				}
+			}
+
+			followers := make([]Peer, peerCount)
+			for i, _ := range followers {
+				followers[i] = &basicPeer{
+					id:           i + 1,
+					rlog:         followerLogs[i],
+					NextIndexMap: make(map[int]int),
+					peers:        []Peer{},
+				}
+
+				leader.AddPeer(followers[i])
+			}
+
+			err := leader.Init()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			testSend(leader, followers, leaderMessage, leaderLog, followerLogs)
+			if secondLeaderMessage != nil {
+				testSend(leader, followers, *secondLeaderMessage, leaderLog, followerLogs)
+			}
+		}(testDatum.followerLogEntries, testDatum.leaderMessage, testDatum.peerCount, testDatum.secondLeaderMessage)
 	}
 }

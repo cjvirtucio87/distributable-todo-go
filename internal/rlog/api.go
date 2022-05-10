@@ -6,14 +6,18 @@ type Log interface {
 	// for elements to be discarded in favor of
 	// the parameter entries.
 	AddEntries(nextIndex int, entries []*Entry) error
+	// Retrieve a count of log entries.
 	Count() int
+	// Retrieve an entry at a specific index.
 	Entry(idx int) *Entry
+	// Retrieve a slice of entries from start to end.
 	Entries(start, end int) []*Entry
 }
 
 type Entry struct {
-	// determines position in log
-	Id      int
+	// The entry's position in the log.
+	Id int
+	// The command to be executed.
 	Command string
 }
 

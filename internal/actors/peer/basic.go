@@ -6,10 +6,11 @@ import (
 )
 
 type basicPeer struct {
-	id           int
-	rlog         rlog.Log
-	NextIndexMap map[int]int
-	peers        []Peer
+	id            int
+	lastAppliedId int
+	rlog          rlog.Log
+	NextIndexMap  map[int]int
+	peers         []Peer
 }
 
 // Entries to be appended to the log.
@@ -46,12 +47,28 @@ func (p *basicPeer) AddPeer(otherPeer Peer) {
 	p.peers = append(p.peers, otherPeer)
 }
 
-func (p *basicPeer) Entry(idx int) *rlog.Entry {
-	return p.rlog.Entry(idx)
+func (p *basicPeer) Apply() error {
+	// TODO: need to actually execute a command; maybe hit a DB?
+	p.lastAppliedId = p.rlog.Entry(p.rlog.Count() - 1).Id
+	return nil
 }
 
-func (p *basicPeer) Followers() []Peer {
-	return p.peers[:]
+func (p *basicPeer) Commit() error {
+	err := p.Apply()
+	if err != nil {
+		return err
+	}
+
+	// TODO: commit attempt is successful when majority of followers
+	// apply, not necessarily all
+	for _, otherPeer := range p.peers {
+		err = otherPeer.Apply()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (p *basicPeer) Id() int {
@@ -65,6 +82,10 @@ func (p *basicPeer) Init() error {
 	}
 
 	return nil
+}
+
+func (p *basicPeer) LastAppliedId() int {
+	return p.lastAppliedId
 }
 
 func (p *basicPeer) LogCount() int {
@@ -87,6 +108,7 @@ func (p *basicPeer) Send(m Message) error {
 		return err
 	}
 
+	logCount := p.LogCount()
 	var successfulAppendCount int
 	for _, otherPeer := range p.peers {
 		otherPeerId := otherPeer.Id()
@@ -94,7 +116,7 @@ func (p *basicPeer) Send(m Message) error {
 		for nextIndex := p.NextIndexMap[otherPeerId]; nextIndex >= 0; nextIndex-- {
 			entries := p.rlog.Entries(
 				nextIndex,
-				p.LogCount(),
+				logCount,
 			)
 
 			p.NextIndexMap[otherPeerId] = nextIndex
@@ -124,7 +146,7 @@ func (p *basicPeer) Send(m Message) error {
 
 	for _, otherPeer := range p.peers {
 		otherPeerId := otherPeer.Id()
-		p.NextIndexMap[otherPeerId] += len(m.Entries)
+		p.NextIndexMap[otherPeerId] = logCount
 	}
 
 	return nil
