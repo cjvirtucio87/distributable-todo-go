@@ -83,91 +83,44 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 	}
 
 	for _, testDatum := range testData {
-		leaderLog := rlog.NewBasicLog()
-		leader := &basicPeer{
-			id:           0,
-			rlog:         leaderLog,
-			NextIndexMap: make(map[int]int),
-			peers:        []Peer{},
-		}
-
-		followerLogs := make([]rlog.Log, testDatum.peerCount)
-		for i := 0; i < testDatum.peerCount; i++ {
-			if len(testDatum.followerLogEntries) == 0 {
-				followerLogs[i] = rlog.NewBasicLog()
-			} else {
-				followerLogs[i] = rlog.NewBasicLog(
-					rlog.WithBackend(testDatum.followerLogEntries),
-				)
-			}
-		}
-
-		followers := make([]Peer, testDatum.peerCount)
-		for i, _ := range followers {
-			followers[i] = &basicPeer{
-				id:           i + 1,
-				rlog:         followerLogs[i],
+		func (followerLogEntries []*rlog.Entry, leaderMessage Message, peerCount int, secondLeaderMessage *Message) {
+			leaderLog := rlog.NewBasicLog()
+			leader := &basicPeer{
+				id:           0,
+				rlog:         leaderLog,
 				NextIndexMap: make(map[int]int),
 				peers:        []Peer{},
 			}
 
-			leader.AddPeer(followers[i])
-		}
-
-		err := leader.Init()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = leader.Send(testDatum.leaderMessage)
-
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		expectedEntries := leaderLog.Entries(0, -1)
-		for _, followerLog := range followerLogs {
-			actualEntries := followerLog.Entries(0, -1)
-
-			expectedEntryCount := len(expectedEntries)
-			actualEntryCount := len(actualEntries)
-			if actualEntryCount != expectedEntryCount {
-				t.Fatalf("expected [%d], got [%d]", expectedEntryCount, actualEntryCount)
-			}
-
-			for i, expectedEntry := range expectedEntries {
-				actualEntry := actualEntries[i]
-				if expectedEntry.Id != i {
-					t.Fatalf("[%v] expected [%d], got [%d]", expectedEntries, expectedEntry.Id, i)
-				}
-
-				if expectedEntry.Id != actualEntry.Id {
-					t.Fatalf("expected [%d], got [%d]", expectedEntry.Id, actualEntry.Id)
-				}
-
-				if expectedEntry.Command != actualEntry.Command {
-					t.Fatalf("expected [%s], got [%s]", expectedEntry.Command, actualEntry.Command)
+			followerLogs := make([]rlog.Log, peerCount)
+			for i := 0; i < peerCount; i++ {
+				if len(followerLogEntries) == 0 {
+					followerLogs[i] = rlog.NewBasicLog()
+				} else {
+					followerLogs[i] = rlog.NewBasicLog(
+						rlog.WithBackend(followerLogEntries),
+					)
 				}
 			}
-		}
 
-		leader.Commit()
+			followers := make([]Peer, peerCount)
+			for i, _ := range followers {
+				followers[i] = &basicPeer{
+					id:           i + 1,
+					rlog:         followerLogs[i],
+					NextIndexMap: make(map[int]int),
+					peers:        []Peer{},
+				}
 
-		expectedLastAppliedId := expectedEntries[len(expectedEntries)-1].Id
-		actualLastAppliedId := leader.LastAppliedId()
-		if expectedLastAppliedId != actualLastAppliedId {
-			t.Fatalf("expected [%d], got [%d]", expectedLastAppliedId, actualLastAppliedId)
-		}
-
-		for _, follower := range followers {
-			actualLastAppliedId = follower.LastAppliedId()
-			if expectedLastAppliedId != actualLastAppliedId {
-				t.Fatalf("expected [%d], got [%d]", expectedLastAppliedId, actualLastAppliedId)
+				leader.AddPeer(followers[i])
 			}
-		}
 
-		if testDatum.secondLeaderMessage != nil {
-			err = leader.Send(*testDatum.secondLeaderMessage)
+			err := leader.Init()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = leader.Send(leaderMessage)
 
 			if err != nil {
 				t.Fatal(err)
@@ -213,6 +166,55 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 					t.Fatalf("expected [%d], got [%d]", expectedLastAppliedId, actualLastAppliedId)
 				}
 			}
-		}
+
+			if secondLeaderMessage != nil {
+				err = leader.Send(*secondLeaderMessage)
+
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				expectedEntries := leaderLog.Entries(0, -1)
+				for _, followerLog := range followerLogs {
+					actualEntries := followerLog.Entries(0, -1)
+
+					expectedEntryCount := len(expectedEntries)
+					actualEntryCount := len(actualEntries)
+					if actualEntryCount != expectedEntryCount {
+						t.Fatalf("expected [%d], got [%d]", expectedEntryCount, actualEntryCount)
+					}
+
+					for i, expectedEntry := range expectedEntries {
+						actualEntry := actualEntries[i]
+						if expectedEntry.Id != i {
+							t.Fatalf("[%v] expected [%d], got [%d]", expectedEntries, expectedEntry.Id, i)
+						}
+
+						if expectedEntry.Id != actualEntry.Id {
+							t.Fatalf("expected [%d], got [%d]", expectedEntry.Id, actualEntry.Id)
+						}
+
+						if expectedEntry.Command != actualEntry.Command {
+							t.Fatalf("expected [%s], got [%s]", expectedEntry.Command, actualEntry.Command)
+						}
+					}
+				}
+
+				leader.Commit()
+
+				expectedLastAppliedId := expectedEntries[len(expectedEntries)-1].Id
+				actualLastAppliedId := leader.LastAppliedId()
+				if expectedLastAppliedId != actualLastAppliedId {
+					t.Fatalf("expected [%d], got [%d]", expectedLastAppliedId, actualLastAppliedId)
+				}
+
+				for _, follower := range followers {
+					actualLastAppliedId = follower.LastAppliedId()
+					if expectedLastAppliedId != actualLastAppliedId {
+						t.Fatalf("expected [%d], got [%d]", expectedLastAppliedId, actualLastAppliedId)
+					}
+				}
+			}
+		}(testDatum.followerLogEntries, testDatum.leaderMessage, testDatum.peerCount, testDatum.secondLeaderMessage)
 	}
 }
