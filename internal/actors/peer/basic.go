@@ -64,14 +64,6 @@ func (p *basicPeer) Commit() error {
 	return p.Apply()
 }
 
-func (p *basicPeer) Entry(idx int) *rlog.Entry {
-	return p.rlog.Entry(idx)
-}
-
-func (p *basicPeer) Followers() []Peer {
-	return p.peers[:]
-}
-
 func (p *basicPeer) Id() int {
 	return p.id
 }
