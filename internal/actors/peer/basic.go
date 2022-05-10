@@ -54,14 +54,21 @@ func (p *basicPeer) Apply() error {
 }
 
 func (p *basicPeer) Commit() error {
+	err := p.Apply()
+	if err != nil {
+		return err
+	}
+
+	// TODO: commit attempt is successful when majority of followers
+	// apply, not necessarily all
 	for _, otherPeer := range p.peers {
-		err := otherPeer.Apply()
+		err = otherPeer.Apply()
 		if err != nil {
 			return err
 		}
 	}
 
-	return p.Apply()
+	return nil
 }
 
 func (p *basicPeer) Id() int {

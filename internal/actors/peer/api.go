@@ -12,9 +12,9 @@ type Peer interface {
 	AddPeer(peer Peer)
 	// Apply the uncommitted entries in the log
 	Apply() error
-	// Commit by telling at least a majority of followers
-	// to apply their uncommitted entries, then
-	// apply your own.
+	// Commit by applying uncommitted entries, then
+	// telling at least a majority of followers
+	// to apply their own.
 	Commit() error
 	// Return the peer's ID.
 	Id() int
