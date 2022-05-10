@@ -101,6 +101,7 @@ func (p *basicPeer) Send(m Message) error {
 		return err
 	}
 
+	logCount := p.LogCount()
 	var successfulAppendCount int
 	for _, otherPeer := range p.peers {
 		otherPeerId := otherPeer.Id()
@@ -108,7 +109,7 @@ func (p *basicPeer) Send(m Message) error {
 		for nextIndex := p.NextIndexMap[otherPeerId]; nextIndex >= 0; nextIndex-- {
 			entries := p.rlog.Entries(
 				nextIndex,
-				p.LogCount(),
+				logCount,
 			)
 
 			p.NextIndexMap[otherPeerId] = nextIndex
@@ -138,7 +139,7 @@ func (p *basicPeer) Send(m Message) error {
 
 	for _, otherPeer := range p.peers {
 		otherPeerId := otherPeer.Id()
-		p.NextIndexMap[otherPeerId] += len(m.Entries)
+		p.NextIndexMap[otherPeerId] = logCount
 	}
 
 	return nil
