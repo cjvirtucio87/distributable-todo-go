@@ -80,15 +80,16 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 			}
 		}
 
-		for i := 0; i < testDatum.peerCount; i++ {
-			leader.AddPeer(
-				&basicPeer{
-					id:           i + 1,
-					rlog:         followerLogs[i],
-					NextIndexMap: make(map[int]int),
-					peers:        []Peer{},
-				},
-			)
+		followers := make([]Peer, testDatum.peerCount)
+		for i, _ := range followers {
+			followers[i] = &basicPeer{
+				id:           i + 1,
+				rlog:         followerLogs[i],
+				NextIndexMap: make(map[int]int),
+				peers:        []Peer{},
+			}
+
+			leader.AddPeer(followers[i])
 		}
 
 		err := leader.Init()
@@ -102,8 +103,8 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		expectedEntries := leaderLog.Entries(0, -1)
 		for _, followerLog := range followerLogs {
-			expectedEntries := leaderLog.Entries(0, -1)
 			actualEntries := followerLog.Entries(0, -1)
 
 			expectedEntryCount := len(expectedEntries)
@@ -125,6 +126,21 @@ func TestSendSendsMessageToFollowers(t *testing.T) {
 				if expectedEntry.Command != actualEntry.Command {
 					t.Fatalf("expected [%s], got [%s]", expectedEntry.Command, actualEntry.Command)
 				}
+			}
+		}
+
+		leader.Commit()
+
+		expectedLastAppliedId := expectedEntries[len(expectedEntries)-1].Id
+		actualLastAppliedId := leader.LastAppliedId()
+		if expectedLastAppliedId != actualLastAppliedId {
+			t.Fatalf("expected [%d], got [%d]", expectedLastAppliedId, actualLastAppliedId)
+		}
+
+		for _, follower := range followers {
+			actualLastAppliedId = follower.LastAppliedId()
+			if expectedLastAppliedId != actualLastAppliedId {
+				t.Fatalf("expected [%d], got [%d]", expectedLastAppliedId, actualLastAppliedId)
 			}
 		}
 	}

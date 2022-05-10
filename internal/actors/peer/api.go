@@ -9,10 +9,17 @@ type Peer interface {
 	// to its log.
 	AddEntries(entries EntryCollection) error
 	AddPeer(peer Peer)
+	// Apply the uncommitted entries in the log
+	Apply() error
+	// Commit by telling at least a majority of followers
+	// to apply their uncommitted entries, then
+	// apply your own.
+	Commit() error
 	Entry(idx int) *rlog.Entry
 	Followers() []Peer
 	Id() int
 	Init() error
+	LastAppliedId() int
 	LogCount() int
 	PeerCount() int
 	// Send a message to follower peers, adding entries
